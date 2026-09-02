@@ -6,12 +6,17 @@
 #   higgsfield auth login
 #   higgsfield workspace set <workspace_id>
 #
+# NOTE PLAN : en plan gratuit, seedance_2_0 / seedance_2_0_mini renvoient
+# "Requires basic plan or higher". wan2_7, kling3_0 et gemini_omni passent.
+# Vérifier le coût avant de lancer :  higgsfield generate cost <model> ...
+#
 # Usage : ./scripts/motivation-video.sh
 
 set -euo pipefail
 
-MODEL="seedance_2_0"     # SOTA photoréaliste, multi-shot, jusqu'à 4K
+MODEL="wan2_7"           # accessible en plan gratuit (Seedance 2.0 exige Basic+)
 RATIO="9:16"             # vertical réseaux sociaux ; passer à 16:9 pour du cinéma
+DUREE=4                  # wan2_7 : 2-15s. Coût 720p ~1,5 crédit/s
 OUT="out/motivation"
 mkdir -p "$OUT"
 
@@ -43,8 +48,8 @@ for PLAN in "$PLAN1" "$PLAN2" "$PLAN3" "$PLAN4" "$PLAN5"; do
   higgsfield generate create "$MODEL" \
     --prompt "$PLAN" \
     --aspect_ratio "$RATIO" \
-    --duration 8 \
-    --resolution 1080p \
+    --duration "$DUREE" \
+    --resolution 720p \
     --wait --wait-timeout 20m
   i=$((i + 1))
 done
