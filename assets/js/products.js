@@ -1,196 +1,194 @@
 /* =========================================================================
-   Forever Academy — Catalogue produits
-   Les prix sont donnés à titre indicatif (démonstration) : remplacez-les par
-   les tarifs officiels de votre boutique avant toute mise en ligne.
+   Forever Academy — Catalogue
+   Photographies : visuels produits fournis par le distributeur.
+   Textes : descriptifs de composition, de texture et d'usage. Aucune
+   allégation thérapeutique — voir la note réglementaire du pied de page.
+   Prix : indicatifs, à remplacer par les tarifs officiels.
    ========================================================================= */
 
 window.FOREVER_PRODUCTS = [
   {
     id: "aloe-vera-gel",
     name: "Forever Aloe Vera Gel",
+    range: "Les gels à boire",
     category: "boisson",
     price: 27.9,
     size: "1 L",
-    badge: "Best-seller",
-    tagline: "Le pur jus de la feuille d'aloe vera, stabilisé à froid.",
-    shape: "bottle",
-    colors: { a: "#8fd14f", b: "#1f7a3f" },
+    badge: "L'original",
+    accent: "#d8c33f",
+    image: "assets/img/gel-hero.jpg",
+    focus: "50% 46%",
+    tagline: "99,7 % de pulpe d'aloe vera, stabilisée à froid.",
     description:
-      "Récolté à la main puis stabilisé sans conservateur agressif, ce gel contient 99,7 % de pulpe d'aloe vera. Une gorgée quotidienne pour accompagner le confort digestif et l'équilibre général de l'organisme.",
-    benefits: ["99,7 % de pulpe pure", "Confort digestif", "Sans conservateur ajouté", "Riche en polysaccharides"],
-    usage: "60 à 120 ml par jour, de préférence avant les repas. À conserver au frais après ouverture."
+      "Le gel du cœur de la feuille, fileté à la main puis stabilisé en quelques heures sans conservateur ajouté et sans sucre ajouté. Une texture fluide, un goût végétal franc, très peu sucré.",
+    facts: ["99,7 % de pulpe", "Sans sucre ajouté", "Sans conservateur ajouté", "Bouteille 1 litre"],
+    usage: "60 à 120 ml par jour, pur ou allongé d'eau. Bien agiter, conserver au réfrigérateur après ouverture et consommer sous 30 jours."
+  },
+  {
+    id: "aloe-peaches",
+    name: "Forever Aloe Peaches",
+    range: "Les gels à boire",
+    category: "boisson",
+    price: 29.5,
+    size: "1 L",
+    badge: "Le plus doux",
+    accent: "#e8913f",
+    image: "assets/img/pack-peaches.jpg",
+    focus: "50% 50%",
+    tagline: "Le gel d'aloe vera parfumé à la pêche.",
+    description:
+      "La même base de gel d'aloe vera, adoucie par une purée de pêche. C'est la version que l'on fait goûter à celles et ceux que le goût végétal rebute, et celle que les enfants acceptent le plus volontiers.",
+    facts: ["Purée de pêche", "Sans conservateur ajouté", "Goût rond et sucré", "Bouteille 1 litre"],
+    usage: "60 à 120 ml par jour. Se sert très frais, seul ou dans un smoothie."
   },
   {
     id: "aloe-berry-nectar",
     name: "Forever Aloe Berry Nectar",
+    range: "Les gels à boire",
     category: "boisson",
     price: 29.5,
     size: "1 L",
-    badge: "Gourmand",
-    tagline: "Aloe vera, canneberge et pomme pour une note fruitée.",
-    shape: "bottle",
-    colors: { a: "#ff7a9c", b: "#8e1d47" },
+    badge: "Fruité",
+    accent: "#b0405f",
+    image: "assets/img/pack-berry.jpg",
+    focus: "50% 50%",
+    tagline: "Aloe vera, canneberge et pomme.",
     description:
-      "Toute la richesse du gel d'aloe vera relevée par le jus de canneberge et de pomme. Une version fruitée, appréciée pour le confort des voies urinaires et sa teneur en vitamine C.",
-    benefits: ["Goût fruité", "Confort urinaire", "Source de vitamine C", "Idéal pour débuter"],
-    usage: "60 à 120 ml par jour. Bien agiter avant utilisation."
+      "Le gel d'aloe vera relevé au jus de canneberge et de pomme, avec l'acidité qui va avec. La bouteille rose de la gamme, celle que l'on ouvre au petit-déjeuner.",
+    facts: ["Canneberge et pomme", "Note acidulée", "Sans conservateur ajouté", "Bouteille 1 litre"],
+    usage: "60 à 120 ml par jour, de préférence le matin. Bien agiter avant de servir."
   },
   {
     id: "forever-freedom",
     name: "Forever Freedom",
+    range: "Les gels à boire",
     category: "boisson",
     price: 39.9,
     size: "1 L",
-    badge: "Mobilité",
-    tagline: "Aloe vera enrichi en glucosamine, chondroïtine et MSM.",
-    shape: "bottle",
-    colors: { a: "#ffb545", b: "#a4500d" },
+    badge: "Agrumes",
+    accent: "#4257c9",
+    image: "assets/img/freedom.jpg",
+    focus: "50% 52%",
+    tagline: "Gel d'aloe vera aromatisé aux agrumes, avec glucosamine, chondroïtine et MSM.",
     description:
-      "La formule d'aloe vera associée à la glucosamine, à la chondroïtine et au MSM, complétée en vitamine C. Le compagnon des articulations sollicitées par le sport ou par le quotidien.",
-    benefits: ["Souplesse articulaire", "Goût orange", "Vitamine C", "Pensé pour les sportifs"],
-    usage: "120 ml par jour, matin ou soir, pendant au moins trois mois."
+      "La bouteille bleue : un gel d'aloe vera au goût d'orange, formulé avec de la glucosamine (1 450 mg), de la chondroïtine (1 350 mg) et du MSM (650 mg), complété en vitamine C.",
+    facts: ["Glucosamine 1 450 mg", "Chondroïtine 1 350 mg", "MSM 650 mg", "Vitamine C"],
+    usage: "120 ml par jour, matin ou soir, dans le cadre d'une alimentation variée."
   },
   {
-    id: "arctic-sea",
-    name: "Forever Arctic Sea",
+    id: "active-pro-b",
+    name: "Forever Active Pro-B",
+    range: "Les compléments",
     category: "complement",
     price: 34.9,
-    size: "120 capsules",
-    badge: "Oméga 3",
-    tagline: "Huiles de poisson et d'olive, riches en EPA et DHA.",
-    shape: "jar",
-    colors: { a: "#5ad1ff", b: "#0b4a7a" },
+    size: "30 capsules",
+    badge: "6 souches",
+    accent: "#b08a5a",
+    image: "assets/img/pro-b.jpg",
+    focus: "50% 56%",
+    tagline: "Formule probiotique à six souches, en capsules.",
     description:
-      "Un mélange équilibré d'huiles de poissons des mers froides et d'huile d'olive, source naturelle d'oméga 3. L'EPA et le DHA contribuent au fonctionnement normal du cœur et du cerveau.",
-    benefits: ["Cœur et cerveau", "EPA + DHA", "Pêche responsable", "Sans arrière-goût"],
-    usage: "2 capsules, deux fois par jour, au cours d'un repas."
+      "Six souches de ferments dans une capsule conçue pour se conserver sans réfrigération. Le format tube de 30 capsules couvre un mois, à raison d'une par jour.",
+    facts: ["6 souches", "30 capsules", "Sans réfrigération", "Une prise par jour"],
+    usage: "1 capsule par jour, avec un verre d'eau, de préférence à distance d'un repas chaud."
   },
   {
-    id: "forever-daily",
-    name: "Forever Daily",
+    id: "fields-of-greens",
+    name: "Forever Fields of Greens",
+    range: "Les compléments",
     category: "complement",
-    price: 24.9,
-    size: "60 comprimés",
-    badge: "Quotidien",
-    tagline: "55 nutriments essentiels véhiculés par l'aloe.",
-    shape: "jar",
-    colors: { a: "#ffe066", b: "#9a6b00" },
+    price: 22.9,
+    size: "80 comprimés",
+    badge: "Herbes jeunes",
+    accent: "#2f7a4c",
+    image: "assets/img/greens.jpg",
+    focus: "50% 52%",
+    tagline: "Jeune orge, jeune blé et luzerne, avec une pointe de cayenne.",
     description:
-      "Une multivitamine complète qui réunit 55 nutriments parfaitement dosés, dont 12 vitamines et 12 minéraux, portés par la technologie AOS Complex à base d'aloe vera.",
-    benefits: ["12 vitamines", "12 minéraux", "Absorption optimisée", "Énergie au quotidien"],
-    usage: "1 comprimé matin et soir avec un grand verre d'eau."
+      "Trois herbes jeunes séchées et comprimées, relevées d'une pointe de poivre de Cayenne. Un comprimé vert foncé, à l'odeur végétale marquée, pour celles et ceux qui mangent peu de légumes verts.",
+    facts: ["Jeune orge", "Jeune blé", "Luzerne", "80 comprimés"],
+    usage: "1 à 3 comprimés par jour avec un grand verre d'eau."
   },
   {
-    id: "garcinia-plus",
-    name: "Forever Garcinia Plus",
-    category: "complement",
-    price: 32.0,
-    size: "70 capsules",
-    badge: "Silhouette",
-    tagline: "Extrait de Garcinia cambogia et chrome.",
-    shape: "jar",
-    colors: { a: "#b8ff8a", b: "#2c6a2e" },
+    id: "aloe-vera-gelly",
+    name: "Aloe Vera Gelly",
+    range: "Les soins",
+    category: "soin",
+    price: 21.9,
+    size: "118 ml",
+    badge: "84 % d'aloe",
+    accent: "#3fa79f",
+    image: "assets/img/gelly.jpg",
+    focus: "50% 56%",
+    tagline: "Gel transparent à 84 % de gel d'aloe vera, sans corps gras.",
     description:
-      "Un extrait naturel de Garcinia cambogia associé au chrome, qui contribue au métabolisme normal des macronutriments. Un allié des programmes de rééquilibrage alimentaire.",
-    benefits: ["Métabolisme des sucres", "Apport en chrome", "Programme minceur", "Origine végétale"],
-    usage: "1 capsule 30 à 60 minutes avant chacun des trois repas."
+      "Un gel translucide qui s'étale sans film gras et sèche vite. Il hydrate et apaise la peau, y compris après une exposition au soleil ou un rasage. Le tube que l'on garde dans la salle de bains et dans le sac de sport.",
+    facts: ["84 % de gel d'aloe", "Texture non grasse", "Hydrate et apaise", "Tube 118 ml"],
+    usage: "Appliquer une fine couche sur peau propre, aussi souvent que souhaité. Usage externe."
   },
   {
     id: "aloe-propolis-creme",
     name: "Aloe Propolis Creme",
+    range: "Les soins",
     category: "soin",
     price: 26.5,
     size: "113 g",
-    badge: "Peaux sensibles",
-    tagline: "Aloe vera, propolis d'abeille et camomille.",
-    shape: "jar",
-    colors: { a: "#ffd28a", b: "#8a4b12" },
-    description:
-      "Une crème onctueuse qui réunit le gel d'aloe vera stabilisé et la propolis récoltée par les abeilles. Nourrissante et apaisante, elle est plébiscitée pour les zones sèches ou fragilisées.",
-    benefits: ["Apaisante", "Nourrissante", "Vitamines A et E", "Texture riche"],
-    usage: "Appliquer une fine couche sur peau propre, matin et soir."
-  },
-  {
-    id: "aloe-heat-lotion",
-    name: "Aloe Heat Lotion",
-    category: "soin",
-    price: 21.9,
-    size: "118 ml",
-    badge: "Massage",
-    tagline: "Lotion chauffante pour muscles fatigués.",
-    shape: "tube",
-    colors: { a: "#ff9a6b", b: "#8f2b12" },
-    description:
-      "Une lotion de massage à effet chauffant, formulée avec de l'aloe vera et des huiles essentielles de menthol et d'eucalyptus. La détente d'après l'effort.",
-    benefits: ["Effet chauffant", "Menthol et eucalyptus", "Après le sport", "Pénètre vite"],
-    usage: "Masser les zones concernées jusqu'à pénétration complète. Se laver les mains après usage."
-  },
-  {
-    id: "aloe-first",
-    name: "Forever Aloe First",
-    category: "soin",
-    price: 23.5,
-    size: "473 ml",
-    badge: "Spray",
-    tagline: "Le spray d'urgence à l'aloe vera et aux plantes.",
-    shape: "tube",
-    colors: { a: "#9be7ff", b: "#12587a" },
-    description:
-      "Un spray qui associe 11 extraits de plantes et de la propolis à une base d'aloe vera stabilisé. Le geste rapide pour rafraîchir la peau ou le cuir chevelu.",
-    benefits: ["Format spray", "11 extraits végétaux", "Rafraîchissant", "Toute la famille"],
-    usage: "Vaporiser directement sur la zone à traiter, aussi souvent que nécessaire."
-  },
-  {
-    id: "bright-toothgel",
-    name: "Forever Bright Toothgel",
-    category: "soin",
-    price: 12.9,
-    size: "130 g",
-    badge: "Sans fluor",
-    tagline: "Gel dentaire à l'aloe vera et à la propolis.",
-    shape: "tube",
-    colors: { a: "#9fe8ff", b: "#1c5f8a" },
-    description:
-      "Un gel dentaire doux, sans fluor ajouté, qui associe aloe vera et propolis pour un nettoyage efficace et une haleine fraîche. Il convient à toute la famille.",
-    benefits: ["Sans fluor", "Goût menthe douce", "Formule vegan", "Dès le plus jeune âge"],
-    usage: "Se brosser les dents après chaque repas, au moins deux fois par jour."
-  },
-  {
-    id: "bee-honey",
-    name: "Forever Bee Honey",
-    category: "ruche",
-    price: 18.9,
-    size: "500 g",
     badge: "Ruche",
-    tagline: "Un miel pur, récolté dans des zones préservées.",
-    shape: "jar",
-    colors: { a: "#ffcf5c", b: "#8a5a00" },
+    accent: "#d99b2b",
+    image: "assets/img/gelly-propolis.jpg",
+    focus: "50% 52%",
+    tagline: "Crème riche au gel d'aloe vera et à la propolis d'abeille.",
     description:
-      "Un mélange naturel de nectars butinés par les abeilles, sans sucre ajouté. Source d'énergie rapidement assimilable, parfait dans une infusion ou sur une tartine.",
-    benefits: ["100 % naturel", "Énergie rapide", "Sans sucre ajouté", "Texture crémeuse"],
-    usage: "Une à deux cuillères à café par jour, seul ou dans une boisson tiède."
+      "Une crème épaisse et couvrante qui associe le gel d'aloe vera à la propolis récoltée par les abeilles, avec de la camomille. Elle nourrit les zones sèches — coudes, talons, mains lavées trop souvent.",
+    facts: ["Gel d'aloe et propolis", "Camomille", "Texture riche", "Pot 113 g"],
+    usage: "Masser une noisette sur les zones sèches, matin et soir. Usage externe."
   },
   {
-    id: "forever-move",
-    name: "Forever Move",
-    category: "complement",
-    price: 74.0,
-    size: "90 gélules",
-    badge: "Premium",
-    tagline: "NEM et curcuma pour les articulations exigeantes.",
-    shape: "jar",
-    colors: { a: "#ffb0d2", b: "#6d1440" },
+    id: "aloe-lips",
+    name: "Forever Aloe Lips",
+    range: "Les soins",
+    category: "soin",
+    price: 6.9,
+    size: "4,25 g",
+    badge: "Format poche",
+    accent: "#c04c68",
+    image: "assets/img/lips.jpg",
+    focus: "50% 46%",
+    tagline: "Stick à lèvres à l'aloe vera, au jojoba et à la cire d'abeille.",
     description:
-      "Une formule brevetée associant la membrane de coquille d'œuf (NEM) au curcuma. Conçue pour celles et ceux qui sollicitent intensément leurs articulations.",
-    benefits: ["Ingrédient breveté", "Curcuma", "Confort articulaire", "Format 30 jours"],
-    usage: "3 gélules par jour avec un grand verre d'eau."
+      "Le plus petit produit de la gamme et le plus souvent racheté. Aloe vera, huile de jojoba et cire d'abeille dans un stick qui tient dans une poche, contre le froid, le vent et le soleil.",
+    facts: ["Aloe vera et jojoba", "Cire d'abeille", "Stick 4,25 g", "Toute l'année"],
+    usage: "Appliquer sur les lèvres aussi souvent que nécessaire."
+  },
+  {
+    id: "logic-rituel",
+    name: "Logic by Forever",
+    range: "Les soins",
+    category: "soin",
+    price: 79.0,
+    size: "Rituel 3 soins",
+    badge: "Rituel visage",
+    accent: "#5ec3bd",
+    image: "assets/img/logic.jpg",
+    focus: "50% 58%",
+    tagline: "Nettoyant, essence et hydratant : le rituel visage à l'aloe.",
+    description:
+      "Trois gestes, trois textures en gel : l'aloe gel cleanser (88 ml) qui démaquille sans décaper, la balancing aloe essence (73 ml) qui prépare la peau, et le soothing gel moisturizer (59 ml) qui hydrate sans film gras. Pensé pour les peaux mixtes.",
+    facts: ["Gel cleanser 88 ml", "Aloe essence 73 ml", "Gel moisturizer 59 ml", "Textures non grasses"],
+    usage: "Matin et soir : nettoyer, appliquer l'essence sur peau humide, puis l'hydratant."
   }
 ];
 
 window.FOREVER_CATEGORIES = [
-  { id: "tous", label: "Tout le catalogue" },
-  { id: "boisson", label: "Boissons à l'aloe" },
+  { id: "tous", label: "Tout voir" },
+  { id: "boisson", label: "Gels à boire" },
   { id: "complement", label: "Compléments" },
-  { id: "soin", label: "Soins & beauté" },
-  { id: "ruche", label: "Produits de la ruche" }
+  { id: "soin", label: "Soins & beauté" }
+];
+
+/* Les formats trio, présentés en bandeau sur la page d'accueil. */
+window.FOREVER_TRIOS = [
+  { id: "aloe-vera-gel", label: "Aloe Vera Gel", image: "assets/img/pack-gel.jpg", accent: "#d8c33f" },
+  { id: "aloe-peaches", label: "Aloe Peaches", image: "assets/img/pack-peaches.jpg", accent: "#e8913f" },
+  { id: "aloe-berry-nectar", label: "Aloe Berry Nectar", image: "assets/img/pack-berry.jpg", accent: "#b0405f" }
 ];
