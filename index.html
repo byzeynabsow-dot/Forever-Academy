@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forever Academy — Gels d'aloe vera, compléments et soins Forever</title>
+<meta name="description" content="Boutique de produits Forever : gels d'aloe vera à boire, compléments et soins à l'aloe. Catalogue photographique avec navigation et transitions en 3D.">
+<meta name="theme-color" content="#03100a">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🌿</text></svg>">
+</head>
+<body>
+
+<div class="bg-scene" aria-hidden="true">
+  <div class="bg-orb bg-orb--a"></div>
+  <div class="bg-orb bg-orb--b"></div>
+  <div class="bg-floor"></div>
+  <div id="sparks"></div>
+</div>
+<div class="grain" aria-hidden="true"></div>
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<header class="site-header" id="siteHeader">
+  <a class="brand" href="#accueil" data-nav="accueil" aria-label="Forever Academy, accueil">
+    <span class="brand__mark" aria-hidden="true">
+      <span class="brand__face">F</span>
+      <span class="brand__face brand__face--b">🌿</span>
+    </span>
+    <span class="brand__text">Forever <em>Academy</em></span>
+  </a>
+  <nav class="site-nav" id="siteNav" aria-label="Navigation principale">
+    <a href="#accueil"  data-nav="accueil" class="is-active">Accueil</a>
+    <a href="#produits" data-nav="produits">Produits</a>
+    <a href="#procede"  data-nav="procede">Le procédé</a>
+    <a href="#contact"  data-nav="contact">Contact</a>
+  </nav>
+  <div class="header-actions">
+    <button class="icon-btn" id="motionToggle" type="button" aria-pressed="false" title="Réduire les animations">
+      <span aria-hidden="true">✦</span><span class="sr-only">Réduire les animations</span>
+    </button>
+    <button class="cart-btn" id="cartBtn" type="button" aria-haspopup="dialog" aria-controls="cartDrawer">
+      <span aria-hidden="true">🛒</span><span class="cart-btn__label">Panier</span>
+      <span class="cart-btn__count" id="cartCount">0</span>
+    </button>
+    <button class="burger" id="burger" type="button" aria-expanded="false" aria-controls="siteNav">
+      <span></span><span></span><span></span><span class="sr-only">Menu</span>
+    </button>
+  </div>
+</header>
+
+<div class="stage">
+  <main>
+
+    <!-- ============ Accueil ============ -->
+    <section class="view is-active" data-view="accueil" id="accueil" tabindex="-1">
+      <div class="hero">
+        <div class="hero__text">
+          <p class="eyebrow"><span class="dot"></span> Distributeur indépendant Forever</p>
+          <h1 class="hero__title">
+            <span class="line"><span>Le gel du cœur</span></span>
+            <span class="line"><span>de la feuille,</span></span>
+            <span class="line"><span>en trois dimensions.</span></span>
+          </h1>
+          <p class="hero__lead">
+            Dix références photographiées : les gels à boire, les compléments et les
+            soins à l'aloe vera. Chaque fiche s'ouvre par une rotation, et l'on passe
+            d'un article au suivant en faisant pivoter le panneau.
+          </p>
+          <div class="hero__cta">
+            <button class="btn btn--primary" data-nav="produits" type="button">Voir le catalogue</button>
+            <button class="btn btn--ghost" data-nav="procede" type="button">Le procédé</button>
+          </div>
+          <ul class="hero__stats">
+            <li><strong data-count="99.7" data-suffix=" %">0</strong><span>de pulpe dans le gel</span></li>
+            <li><strong data-count="10" data-suffix="">0</strong><span>références en ligne</span></li>
+            <li><strong data-count="48" data-suffix=" h">0</strong><span>d'expédition</span></li>
+          </ul>
+        </div>
+
+        <div class="hero__visual">
+          <figure class="slab" id="heroSlab" style="margin:0">
+            <div class="slab__inner" id="heroSlabInner">
+              <img src="assets/img/gel-hero.jpg" width="1080" height="1350"
+                   alt="Bouteilles de Forever Aloe Vera Gel devant des feuilles d'aloe vera coupées">
+              <span class="slab__gloss" id="heroGloss"></span>
+              <span class="slab__edge"></span>
+              <figcaption class="slab__tag"><b>Aloe Vera Gel</b> — 99,7 % de pulpe</figcaption>
+            </div>
+            <div class="slab__mirror" aria-hidden="true">
+              <img src="assets/img/gel-hero.jpg" alt="" loading="lazy">
+            </div>
+          </figure>
+        </div>
+      </div>
+
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee__track">
+          <span>Aloe Vera Gel</span><span>•</span><span>Aloe Peaches</span><span>•</span>
+          <span>Berry Nectar</span><span>•</span><span>Freedom</span><span>•</span>
+          <span>Active Pro-B</span><span>•</span><span>Aloe Vera Gelly</span><span>•</span>
+          <span>Aloe Vera Gel</span><span>•</span><span>Aloe Peaches</span><span>•</span>
+          <span>Berry Nectar</span><span>•</span><span>Freedom</span><span>•</span>
+          <span>Active Pro-B</span><span>•</span><span>Aloe Vera Gelly</span><span>•</span>
+        </div>
+      </div>
+
+      <section class="band reveal">
+        <header class="band__head">
+          <h2>Les formats trio</h2>
+          <p>Les trois gels à boire se vendent aussi par trois bouteilles. Le format de celles et ceux qui font la cure sans interruption.</p>
+        </header>
+        <div class="trios" id="trios"></div>
+      </section>
+
+      <section class="band reveal">
+        <header class="band__head">
+          <h2>La galerie</h2>
+          <p>Faites tourner l'anneau, cliquez sur une photo pour ouvrir la fiche.</p>
+        </header>
+        <div class="ring-wrap" id="ringWrap">
+          <button class="ring-nav ring-nav--prev" id="ringPrev" type="button" aria-label="Article précédent">‹</button>
+          <div class="ring-stage"><div class="ring" id="ring"></div></div>
+          <button class="ring-nav ring-nav--next" id="ringNext" type="button" aria-label="Article suivant">›</button>
+          <p class="ring-hint">Glissez horizontalement ou utilisez les flèches du clavier</p>
+        </div>
+      </section>
+    </section>
+
+    <!-- ============ Produits ============ -->
+    <section class="view" data-view="produits" id="produits" tabindex="-1">
+      <header class="band__head">
+        <h2>Le catalogue</h2>
+        <p>Survolez une carte pour la retourner, cliquez pour ouvrir la fiche. À l'intérieur, les flèches font pivoter le panneau d'un article à l'autre.</p>
+      </header>
+      <div class="toolbar">
+        <div class="chips" id="filters" aria-label="Filtrer par gamme"></div>
+        <label class="search">
+          <span class="sr-only">Rechercher un produit</span>
+          <input type="search" id="search" placeholder="Rechercher…" autocomplete="off">
+        </label>
+      </div>
+      <div class="grid" id="grid"></div>
+      <p class="empty" id="emptyState" hidden>Aucun article ne correspond à cette recherche.</p>
+    </section>
+
+    <!-- ============ Le procédé ============ -->
+    <section class="view" data-view="procede" id="procede" tabindex="-1">
+      <header class="band__head">
+        <h2>De la feuille au flacon</h2>
+        <p>Ce qui se passe entre le champ et votre étagère.</p>
+      </header>
+
+      <div class="contact" style="align-items:center">
+        <ol class="steps">
+          <li class="step reveal"><span class="step__n">1</span>
+            <h3>La récolte à la main</h3>
+            <p>Chaque feuille est coupée à maturité puis filetée manuellement, afin de séparer le gel intérieur de l'écorce. La plante entière n'est pas broyée.</p>
+          </li>
+          <li class="step reveal"><span class="step__n">2</span>
+            <h3>La stabilisation à froid</h3>
+            <p>Le gel est traité en quelques heures par un procédé qui évite une pasteurisation agressive et permet de se passer de conservateur ajouté.</p>
+          </li>
+          <li class="step reveal"><span class="step__n">3</span>
+            <h3>Le contrôle par lot</h3>
+            <p>Analyses en laboratoire à chaque lot : concentration en gel, pureté, absence de contaminants. Les certifications sont renouvelées régulièrement.</p>
+          </li>
+          <li class="step reveal"><span class="step__n">4</span>
+            <h3>La mise en flacon</h3>
+            <p>Conditionnement rapide et hermétique, pour que la bouteille qui arrive chez vous soit aussi proche que possible de la feuille d'origine.</p>
+          </li>
+        </ol>
+
+        <figure class="slab reveal" style="margin:0">
+          <div class="slab__inner">
+            <img src="assets/img/logic.jpg" width="1400" height="1400" loading="lazy"
+                 alt="Les trois soins Logic by Forever : nettoyant, essence et hydratant">
+            <span class="slab__gloss"></span>
+            <span class="slab__edge"></span>
+            <figcaption class="slab__tag"><b>Logic by Forever</b> — le rituel visage</figcaption>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ Contact ============ -->
+    <section class="view" data-view="contact" id="contact" tabindex="-1">
+      <header class="band__head">
+        <h2>Parlons de votre routine</h2>
+        <p>Un conseil, une commande, un projet d'activité : écrivez-nous.</p>
+      </header>
+      <div class="contact">
+        <form class="form" id="contactForm" novalidate>
+          <div class="field">
+            <input type="text" id="cName" name="name" placeholder=" " required>
+            <label for="cName">Votre nom</label>
+          </div>
+          <div class="field">
+            <input type="email" id="cMail" name="email" placeholder=" " required>
+            <label for="cMail">Votre e-mail</label>
+          </div>
+          <div class="field">
+            <select id="cTopic" name="topic">
+              <option value="conseil">Conseil produit</option>
+              <option value="commande">Suivi de commande</option>
+              <option value="business">Devenir distributeur</option>
+            </select>
+            <label for="cTopic" class="label--static">Sujet</label>
+          </div>
+          <div class="field">
+            <textarea id="cMsg" name="message" rows="4" placeholder=" " required></textarea>
+            <label for="cMsg">Votre message</label>
+          </div>
+          <button class="btn btn--primary" type="submit">Envoyer</button>
+          <p class="form__note" id="formNote" role="status"></p>
+        </form>
+        <aside class="aside-cards">
+          <div class="info-card reveal"><h3>Livraison</h3>
+            <p>Expédition sous 48 h ouvrées en France métropolitaine, suivi transmis par e-mail.</p></div>
+          <div class="info-card reveal"><h3>Conseil</h3>
+            <p>Décrivez votre habitude quotidienne et le format que vous cherchez : nous vous orientons vers la bonne référence.</p></div>
+          <div class="info-card reveal"><h3>Opportunité</h3>
+            <p>Envie de développer votre propre activité autour de la gamme ? Nous formons et accompagnons.</p></div>
+        </aside>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" hidden>
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__perspective">
+    <div class="flip3d" id="flip3d">
+      <article class="flip3d__face" id="faceA"></article>
+      <article class="flip3d__face flip3d__face--b" id="faceB"></article>
+    </div>
+    <button class="modal__nav modal__nav--prev" id="modalPrev" type="button" aria-label="Article précédent">‹</button>
+    <button class="modal__nav modal__nav--next" id="modalNext" type="button" aria-label="Article suivant">›</button>
+    <button class="modal__close" id="modalClose" type="button" data-close aria-label="Fermer la fiche">✕</button>
+  </div>
+</div>
+
+<div class="drawer" id="cartDrawer" role="dialog" aria-modal="true" aria-labelledby="cartTitle" hidden>
+  <div class="drawer__backdrop" data-cart-close></div>
+  <aside class="drawer__panel">
+    <header class="drawer__head">
+      <h2 id="cartTitle">Votre panier</h2>
+      <button class="modal__close" type="button" data-cart-close aria-label="Fermer le panier">✕</button>
+    </header>
+    <ul class="cart-list" id="cartList"></ul>
+    <p class="cart-empty" id="cartEmpty">Votre panier est vide pour l'instant.</p>
+    <footer class="drawer__foot">
+      <div class="cart-total"><span>Total</span><strong id="cartTotal">0,00 €</strong></div>
+      <button class="btn btn--primary btn--block" id="checkout" type="button">Commander</button>
+      <p class="drawer__note">Démonstration : aucun paiement n'est réellement effectué.</p>
+    </footer>
+  </aside>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<footer class="site-footer">
+  <div class="site-footer__grid">
+    <div>
+      <p class="brand" style="margin-bottom:10px"><span class="brand__text">Forever <em>Academy</em></span></p>
+      <p>Distributeur indépendant de produits Forever. Site réalisé en HTML, CSS et JavaScript, sans dépendance externe.</p>
+    </div>
+    <nav aria-label="Pied de page">
+      <h3>Navigation</h3>
+      <a href="#accueil" data-nav="accueil">Accueil</a>
+      <a href="#produits" data-nav="produits">Produits</a>
+      <a href="#procede" data-nav="procede">Le procédé</a>
+      <a href="#contact" data-nav="contact">Contact</a>
+    </nav>
+    <div>
+      <h3>Informations</h3>
+      <p>Les prix affichés sont indicatifs et servent la démonstration. Les visuels produits sont la propriété de Forever Living Products ; ce site est édité par un distributeur indépendant et n'est pas le site officiel de la marque.</p>
+    </div>
+  </div>
+  <p class="legal">
+    Les compléments alimentaires ne se substituent pas à une alimentation variée et équilibrée ni à un mode de vie sain,
+    et ne sauraient remplacer un avis médical. Aucun produit présenté ici n'a vocation à prévenir, traiter ou guérir une maladie.
+    Tenir hors de portée des jeunes enfants. © <span id="year"></span> Forever Academy.
+  </p>
+</footer>
+
+<script src="assets/js/products.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
