@@ -66,6 +66,22 @@ assets/logo.jpg         logo
 assets/video/*.mp4      fonds vidéo
 ```
 
+## Deux façons d'utiliser le projet
+
+### 1. Le fichier unique `talkandshine.html`
+Tout est dedans : le style, le code, les 40 modules, les devoirs, les compositions, le logo et les trois vidéos de fond. Il suffit de **double-cliquer dessus** — pas de serveur, pas de dossier à côté, il fonctionne même sans connexion. C'est le fichier à envoyer par WhatsApp ou à copier sur un téléphone (≈ 7,5 Mo).
+
+Il est regénéré depuis les sources avec :
+
+```bash
+python3 tools/build-standalone.py
+```
+
+Seule limite : la vraie connexion Google/Apple ne fonctionne pas en `file://` (les deux fournisseurs exigent une adresse `https://`). Les boutons basculent alors automatiquement en mode local.
+
+### 2. Le projet en dossiers
+Plus pratique pour modifier le contenu : chaque niveau a son fichier de cours et son fichier d'examens.
+
 ## Lancer le projet
 
 Un simple serveur statique suffit :

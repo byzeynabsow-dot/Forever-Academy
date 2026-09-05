@@ -373,3 +373,8 @@ body.app-mode{background:transparent;}
   .dash-hero h2{font-size:1.35rem;}
   .vocab-grid{grid-template-columns:1fr;}
 }
+
+/* le texte d'accroche passe devant les bulles animées */
+#view-auth .auth-visual p.sub{z-index:6;text-shadow:0 2px 12px rgba(8,16,32,.55);}
+#view-auth .auth-visual h1{z-index:6;}
+#view-auth .float-layer{z-index:1;}
