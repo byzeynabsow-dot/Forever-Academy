@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0E1B33">
+<title>Forever Academy — Talk &amp; Shine : apprendre l'anglais de A1 à C1</title>
+<meta name="description" content="Cours d'anglais complets de A1 à C1, exercices interactifs, devoirs, compositions et salles d'examen. Tout est accessible immédiatement.">
+<link rel="icon" href="assets/logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Poppins:ital,wght@0,600;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- ============================ FOND VIDÉO ============================ -->
+<div class="video-bg" id="videoBg" aria-hidden="true">
+  <video class="vb" src="assets/video/bg-1.mp4" muted playsinline loop preload="auto"></video>
+  <video class="vb" src="assets/video/bg-2.mp4" muted playsinline loop preload="metadata"></video>
+  <video class="vb" src="assets/video/bg-3.mp4" muted playsinline loop preload="metadata"></video>
+  <div class="video-veil"></div>
+</div>
+<div id="viewCurtain" aria-hidden="true"></div>
+
+<section id="view-auth" class="view active">
+  <div class="auth-wrap">
+
+    <div class="auth-visual scene" id="authVisual">
+      <div class="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+
+      <div class="top-row">
+        <span class="logo-plate"><img src="assets/logo.jpg" alt="Talk &amp; Shine" style="height:38px;width:auto;"></span>
+      </div>
+
+      <div class="auth-kicker"><span>SPEAK</span><span class="sep">•</span><span>LEARN</span><span class="sep">•</span><span>SHINE</span></div>
+      <h1>Apprends l'anglais,<br>fais briller <span class="accent-italic">ton avenir</span>.</h1>
+      <p class="sub">40 modules de cours, plus de 480 exercices corrigés, des devoirs, des compositions et une salle d'examen par niveau — de A1 à C1. Tout est ouvert dès la première minute.</p>
+
+      <div class="icon-stage">
+        <div class="float-layer" id="floatLayer" aria-hidden="true">
+          <div class="word-bubble" style="top:2%;left:0%;--z:60px;animation-delay:0s;">HELLO</div>
+          <div class="word-bubble gold" style="top:-2%;right:2%;--z:90px;animation-delay:1.2s;">SHINE</div>
+          <div class="word-bubble" style="bottom:6%;left:-2%;--z:40px;animation-delay:2.1s;">LEARN</div>
+          <div class="word-bubble gold" style="bottom:2%;right:0%;--z:75px;animation-delay:.6s;">SPEAK</div>
+          <svg class="star-particle" style="top:18%;left:36%;width:16px;animation-delay:.2s;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 11l-6.4 2.9L12 22l-2.9-8.1L2 11l7.4-2.4z"/></svg>
+          <svg class="star-particle" style="bottom:24%;left:18%;width:11px;animation-delay:1.5s;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 11l-6.4 2.9L12 22l-2.9-8.1L2 11l7.4-2.4z"/></svg>
+          <svg class="star-particle" style="top:12%;right:28%;width:13px;animation-delay:.9s;" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L22 11l-6.4 2.9L12 22l-2.9-8.1L2 11l7.4-2.4z"/></svg>
+        </div>
+
+        <div class="orbit-rig" id="orbitRig" aria-hidden="true">
+          <div class="ring r1"></div>
+          <div class="ring r2"></div>
+          <div class="ring r3"></div>
+          <svg class="brand-mark" viewBox="0 0 200 200" fill="none">
+            <path d="M100 20a70 70 0 1 1-38 129L34 168l9-31A70 70 0 0 1 100 20z" fill="#16294B"/>
+            <path d="M64 84c12 8 24 8 36 0 3 14-6 24-18 24s-21-10-18-24z" fill="#fff"/>
+            <path d="M100 84V56M100 56l-14 10M100 56l14 10" stroke="#F5A623" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M120 40l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#F5A623"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="highlight-bar">
+        <div class="highlight-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Leçons interactives</div>
+        <div class="highlight-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg> Suivi de progression</div>
+        <div class="highlight-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 12l2 2 4-4"/></svg> Salles d'examen par niveau</div>
+      </div>
+    </div>
+
+    <div class="auth-form-side">
+      <div class="lang-select">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>
+        Français
+      </div>
+
+      <form class="form-shell" id="authForm" novalidate>
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab-btn active" id="tabLogin" role="tab" aria-selected="true">Se connecter</button>
+          <button type="button" class="tab-btn" id="tabSignup" role="tab" aria-selected="false">Créer un compte</button>
+        </div>
+
+        <div class="eyebrow" id="formEyebrow">Bienvenue 👋</div>
+        <h2 id="formTitle">Connecte-toi à ton espace</h2>
+        <p class="sub" id="formSub">Continue ton parcours vers la fluidité.</p>
+
+        <div class="field signup-only" id="fName">
+          <label for="fullName">Nom complet</label>
+          <div class="input-wrap">
+            <svg class="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+            <input type="text" id="fullName" name="fullName" autocomplete="name" placeholder="Ton prénom et nom">
+          </div>
+          <p class="err" id="errName">Indique ton nom (2 lettres minimum).</p>
+        </div>
+
+        <div class="field" id="fEmail">
+          <label for="email">Adresse email</label>
+          <div class="input-wrap">
+            <svg class="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+            <input type="email" id="email" name="email" autocomplete="email" inputmode="email" placeholder="toi@example.com">
+          </div>
+          <p class="err" id="errEmail">Entre une adresse email valide, par exemple nom@gmail.com.</p>
+        </div>
+
+        <div class="field" id="fPass">
+          <label for="password">Mot de passe</label>
+          <div class="input-wrap">
+            <svg class="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="6 caractères minimum">
+            <button type="button" class="toggle-eye" data-target="password" aria-label="Afficher le mot de passe">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="strength" id="strength"><div class="bar"><i></i></div><span class="txt">Faible</span></div>
+          <p class="err" id="errPass">Le mot de passe doit contenir au moins 6 caractères.</p>
+        </div>
+
+        <div class="field signup-only" id="fPass2">
+          <label for="password2">Confirmer le mot de passe</label>
+          <div class="input-wrap">
+            <svg class="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input type="password" id="password2" name="password2" autocomplete="new-password" placeholder="Retape le mot de passe">
+            <button type="button" class="toggle-eye" data-target="password2" aria-label="Afficher le mot de passe">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <p class="err" id="errPass2">Les deux mots de passe ne sont pas identiques.</p>
+        </div>
+
+        <div class="row-between">
+          <label class="checkbox-row"><input type="checkbox" id="remember" checked> Rester connecté</label>
+          <button type="button" class="link-gold" id="forgotBtn">Mot de passe oublié ?</button>
+        </div>
+
+        <button type="submit" class="btn-gold" id="submitBtn">
+          <span id="submitLabel">Se connecter</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+
+        <button type="button" class="btn-ghost" id="guestBtn">Essayer sans compte</button>
+
+        <div class="divider">ou continue avec</div>
+        <div class="social-row">
+          <button type="button" class="btn-social" id="googleBtn" data-social="Google">
+            <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.3c0-.9-.1-1.6-.2-2.4H12v4.5h6.5c-.1 1.2-.9 2.9-2.6 4.1l4 3.1c2.4-2.2 3.6-5.4 3.6-9.3z"/><path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-4-3.1c-1.1.7-2.5 1.2-3.9 1.2-3 0-5.6-2-6.5-4.8l-4.1 3.2C3.5 21.4 7.4 24 12 24z"/><path fill="#FBBC05" d="M5.5 14.4c-.2-.7-.4-1.5-.4-2.4s.1-1.6.4-2.4L1.4 6.4C.5 8.1 0 10 0 12s.5 3.9 1.4 5.6z"/><path fill="#EA4335" d="M12 4.8c1.7 0 3.3.6 4.5 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.4 0 3.5 2.6 1.4 6.4l4.1 3.2C6.4 6.8 9 4.8 12 4.8z"/></svg>
+            Google
+          </button>
+          <button type="button" class="btn-social" id="appleBtn" data-social="Apple">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 1c.1 1.2-.4 2.4-1.1 3.3-.8.9-2 1.6-3.2 1.5-.1-1.2.5-2.4 1.2-3.2.8-.9 2.1-1.5 3.1-1.6zM20.7 17.2c-.5 1.1-.7 1.6-1.3 2.6-.9 1.4-2.1 3.1-3.6 3.1-1.4 0-1.7-.9-3.5-.9s-2.2.9-3.5.9c-1.5 0-2.6-1.5-3.5-2.9-2.4-3.6-2.6-7.9-1.2-10.1 1-1.6 2.7-2.6 4.2-2.6 1.5 0 2.5.9 3.7.9s2-.9 3.7-.9c1.4 0 2.9.8 3.9 2.1-3.4 1.9-2.9 6.7 1.1 7.9z"/></svg>
+            Apple
+          </button>
+        </div>
+
+        <div id="gsiHost"></div>
+        <p class="social-note" id="socialNote"></p>
+
+        <p class="switch-line" id="switchLine">Pas encore de compte ? <button type="button" class="link-gold" id="switchLink">Créer un compte</button></p>
+
+        <div class="footer-links">
+          <a class="footer-link" href="https://whatsapp.com/channel/0029Vb82wT62ZjCkdgLhfn2Q" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 20z"/><path d="M17 14.3c-.3-.1-1.6-.8-1.8-.9-.2-.1-.4-.1-.6.1-.2.2-.6.9-.8 1.1-.1.2-.3.2-.5.1-.3-.1-1.1-.4-2.1-1.3-.8-.7-1.3-1.6-1.5-1.8-.1-.2 0-.4.1-.5l.4-.5c.1-.1.2-.3.2-.4.1-.2 0-.3 0-.4-.1-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2.9 2.4c.1.2 1.6 2.4 3.9 3.4.5.2.9.4 1.3.5.5.2 1 .1 1.4.1.4-.1 1.6-.6 1.8-1.3.2-.6.2-1.1.2-1.3-.1-.1-.3-.2-.6-.3z"/></svg>
+            Suivre la chaîne WhatsApp Talk &amp; Shine
+          </a>
+          <a class="footer-link" href="https://wa.me/221782239495" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.4 2.1L8.1 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.8 2.1z"/></svg>
+            Une question ? Contacter le professeur
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ HEADER ============================ -->
+<header class="app-header" id="appHeader" style="display:none;">
+  <span class="logo-badge"><img src="assets/logo.jpg" alt="Talk &amp; Shine" style="height:30px;border-radius:6px;"></span>
+  <nav class="app-nav" id="appNav">
+    <button class="nav-btn active" data-target="view-home">Accueil</button>
+    <button class="nav-btn" data-target="view-courses">Cours</button>
+    <button class="nav-btn" data-target="view-exams">Salle d'examen</button>
+    <button class="nav-btn" data-target="view-test">Test de niveau</button>
+  </nav>
+  <div class="header-right">
+    <span class="hello-chip" id="helloChip">Bonjour 👋</span>
+    <span class="level-mini">Niveau <b id="levelMini">—</b></span>
+    <a class="wa-quick" href="https://wa.me/221782239495" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2z"/></svg>
+      Professeur
+    </a>
+    <button class="icon-btn" id="logoutBtn" title="Se déconnecter" aria-label="Se déconnecter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ============================ ACCUEIL ============================ -->
+<section id="view-home" class="view">
+  <div class="shell">
+    <div class="dash-hero">
+      <div class="eyebrow" style="color:var(--gold-2);">TON ESPACE</div>
+      <h2 id="homeTitle">Bonjour 👋</h2>
+      <p id="homeSub">Tous les niveaux, tous les cours et toutes les salles d'examen sont ouverts. Commence où tu veux, avance à ton rythme.</p>
+      <div class="dash-actions">
+        <button class="btn-gold-sm" id="goResume">Reprendre mon cours</button>
+        <button class="btn-ghost-light" id="goRooms">Entrer en salle d'examen</button>
+        <button class="btn-ghost-light" id="goTest">Refaire le test de niveau</button>
+      </div>
+    </div>
+
+    <div class="stat-grid" id="statGrid"></div>
+
+    <div class="section-head">
+      <div>
+        <h2>Ton parcours niveau par niveau</h2>
+        <p>Chaque niveau contient 8 modules de cours, 4 devoirs, 2 compositions et un examen final.</p>
+      </div>
+    </div>
+    <div class="module-grid scene" id="levelGrid"></div>
+  </div>
+</section>
+
+<!-- ============================ TEST DE NIVEAU ============================ -->
+<section id="view-test" class="view">
+  <div class="test-shell">
+    <div class="test-intro">
+      <div class="eyebrow">Avant de commencer</div>
+      <h2>Évaluons ton niveau d'anglais</h2>
+      <p>20 questions, de A1 à C1. Le résultat te conseille un point de départ — il ne bloque rien : tous les cours et toutes les salles restent ouverts.</p>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="quiz-card" id="quizCard"></div>
+  </div>
+</section>
+
+<!-- ============================ COURS ============================ -->
+<section id="view-courses" class="view">
+  <div class="quote-strip">No fear. <span>Just practice.</span> Real progress. — Talk &amp; Shine</div>
+  <div class="shell">
+    <div class="section-head">
+      <div>
+        <h2>Tes modules de cours</h2>
+        <p id="coursesSub">40 modules complets, du débutant à la maîtrise. Tous accessibles immédiatement.</p>
+      </div>
+      <span class="level-chip">Ton niveau : <span class="accent-italic" id="levelChipValue">—</span></span>
+    </div>
+    <div class="filter-row" id="filterRow">
+      <button class="filter-btn active" data-lvl="all">Tous</button>
+      <button class="filter-btn" data-lvl="A1">A1</button>
+      <button class="filter-btn" data-lvl="A2">A2</button>
+      <button class="filter-btn" data-lvl="B1">B1</button>
+      <button class="filter-btn" data-lvl="B2">B2</button>
+      <button class="filter-btn" data-lvl="C1">C1</button>
+    </div>
+    <div class="module-grid scene" id="moduleGrid"></div>
+  </div>
+</section>
+
+<!-- ============================ LEÇON ============================ -->
+<section id="view-lesson" class="view">
+  <div class="lesson-shell" id="lessonShell"></div>
+</section>
+
+<!-- ============================ SALLE D'EXAMEN ============================ -->
+<section id="view-exams" class="view">
+  <div class="shell">
+    <div class="section-head">
+      <div>
+        <h2>Salles d'examen</h2>
+        <p>Une vraie salle par niveau : devoirs, compositions et examen final. Toutes les portes sont ouvertes.</p>
+      </div>
+      <span class="level-chip">Ton niveau : <span class="accent-italic" id="levelChipValue2">—</span></span>
+    </div>
+    <div class="room-tabs" id="roomTabs"></div>
+    <div id="roomBody"></div>
+  </div>
+</section>
+
+<!-- ============================ COPIE (devoir / composition) ============================ -->
+<section id="view-paper" class="view">
+  <div class="paper" id="paperShell"></div>
+</section>
+
+<!-- ============================ EXAMEN FINAL CHRONOMÉTRÉ ============================ -->
+<section id="view-exam-run" class="view">
+  <div class="exam-shell">
+    <div class="exam-bar">
+      <div class="exam-meta">
+        <button class="icon-btn" id="examBack" aria-label="Quitter l'examen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+        </button>
+        <span class="exam-room-chip" id="examRoomChip">Salle A1</span>
+        <span class="score-chip" id="examScoreChip">0 bonne réponse</span>
+      </div>
+      <div class="timer-ring" id="timerRing">
+        <svg viewBox="0 0 56 56"><circle class="bgc" cx="28" cy="28" r="24"/><circle class="fgc" id="timerCircle" cx="28" cy="28" r="24"/></svg>
+        <b id="timerText">40</b>
+      </div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="examProgress"></div></div>
+    <div class="quiz-card" id="examCard"></div>
+  </div>
+</section>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/config.js"></script>
+<script src="js/data/placement.js"></script>
+<script src="js/data/a1.js"></script>
+<script src="js/data/a2.js"></script>
+<script src="js/data/b1.js"></script>
+<script src="js/data/b2.js"></script>
+<script src="js/data/c1.js"></script>
+<script src="js/data/exam-a1.js"></script>
+<script src="js/data/exam-a2.js"></script>
+<script src="js/data/exam-b1.js"></script>
+<script src="js/data/exam-b2.js"></script>
+<script src="js/data/exam-c1.js"></script>
+<script src="js/store.js"></script>
+<script src="js/background.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
