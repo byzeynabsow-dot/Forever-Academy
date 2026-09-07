@@ -66,6 +66,44 @@ assets/logo.jpg         logo
 assets/video/*.mp4      fonds vidéo
 ```
 
+## SHINE — la professeure IA (Gemini Live)
+
+SHINE parle et écoute en temps réel via l'API Gemini Live. L'élève parle dans son micro, SHINE répond à voix haute, corrige une erreur à la fois et la transcription s'affiche des deux côtés.
+
+**La clé n'est jamais dans le navigateur.** L'architecture est celle recommandée par Google :
+
+```
+navigateur → /api/token (fonction Netlify, garde GEMINI_API_KEY)
+           → jeton éphémère (1 min pour ouvrir, 10 min de session max)
+           → WebSocket direct navigateur ↔ Gemini Live
+```
+
+La consigne pédagogique (niveau CECRL, façon de corriger, sujet de la leçon) est construite côté serveur et **verrouillée dans le jeton** : le navigateur ne peut pas la détourner.
+
+Garde-fous de coût : 12 sessions par heure et par IP, fermeture automatique après 90 s de silence, plafond dur de 10 minutes par session.
+
+### Ce qu'il faut pour l'activer
+
+1. Une clé Gemini au format `AIza…` — **une clé `AQ.…` est refusée par l'API** (`401 ACCESS_TOKEN_TYPE_UNSUPPORTED`).
+2. La poser dans Netlify : *Site configuration → Environment variables → `GEMINI_API_KEY`*, scope **Functions**.
+3. Rien à changer dans le code.
+
+Sans clé, SHINE affiche « SHINE vocal n'est pas encore configuré sur ce site » — aucun bouton ne fait semblant de fonctionner.
+
+### Ce qui est réellement implémenté
+
+| Fonction | État |
+|---|---|
+| Jeton éphémère côté serveur, clé jamais exposée | ✅ |
+| Micro → PCM 16 kHz → Gemini → audio 24 kHz | ✅ code complet, à valider avec une clé |
+| Transcription entrante et sortante | ✅ |
+| Interruption naturelle (l'élève coupe la parole) | ✅ |
+| Mode texte de repli si le micro est refusé | ✅ testé |
+| États IDLE / LISTENING / THINKING / SPEAKING / ERROR | ✅ testé |
+| Avatar animé, bouche pilotée par l'amplitude réelle de la voix | ✅ testé |
+| Lip-sync phonétique (bouche formant chaque son) | ❌ non implémenté |
+| Avatar 3D WebGL | ❌ non implémenté — l'avatar est en SVG animé |
+
 ## Deux façons d'utiliser le projet
 
 ### 1. Le fichier unique `talkandshine.html`
@@ -77,7 +115,7 @@ Il est regénéré depuis les sources avec :
 python3 tools/build-standalone.py
 ```
 
-Seule limite : la vraie connexion Google/Apple ne fonctionne pas en `file://` (les deux fournisseurs exigent une adresse `https://`). Les boutons basculent alors automatiquement en mode local.
+Deux limites : SHINE vocal a besoin de la fonction serveur, donc il reste indisponible dans ce fichier unique ; et la vraie connexion Google/Apple ne fonctionne pas en `file://` (les deux fournisseurs exigent une adresse `https://`). Les boutons basculent alors automatiquement en mode local.
 
 ### 2. Le projet en dossiers
 Plus pratique pour modifier le contenu : chaque niveau a son fichier de cours et son fichier d'examens.

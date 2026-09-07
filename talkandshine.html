@@ -799,6 +799,97 @@ body.app-mode{background:transparent;}
 #view-auth .auth-visual h1{z-index:6;}
 #view-auth .float-layer{z-index:1;}
 
+/* =========================================================
+   SHINE — professeure IA
+   ========================================================= */
+#view-shine .shine-shell{max-width:1120px;margin:0 auto;padding:26px 20px 80px;}
+.shine-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:22px;align-items:start;}
+
+/* --- scène de l'avatar --- */
+.shine-stage{
+  position:relative;border-radius:var(--r-l);overflow:hidden;padding:22px 22px 18px;
+  background:linear-gradient(160deg,#132347 0%,#1B3160 45%,#24406F 100%);
+  box-shadow:var(--shadow-lg);min-height:420px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:box-shadow .4s ease;
+}
+.shine-stage::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(70% 55% at 50% 18%, rgba(245,166,35,.13), transparent 70%);
+  opacity:0;transition:opacity .45s ease;
+}
+.shine-stage.speaking::after{opacity:1;}
+.shine-stage.listening{box-shadow:0 0 0 2px rgba(47,174,106,.45), var(--shadow-lg);}
+.shine-stage.thinking{box-shadow:0 0 0 2px rgba(245,166,35,.45), var(--shadow-lg);}
+.shine-stage.speaking{box-shadow:0 0 0 2px rgba(245,166,35,.75), var(--shadow-lg);}
+.shine-stage.error{box-shadow:0 0 0 2px rgba(226,86,75,.6), var(--shadow-lg);}
+#shineFace{width:min(100%,300px);height:auto;display:block;filter:drop-shadow(0 18px 30px rgba(0,0,0,.35));}
+.shine-id{text-align:center;margin-top:10px;color:#fff;}
+.shine-id b{display:block;font-family:'Poppins',sans-serif;font-size:1.2rem;letter-spacing:.06em;}
+.shine-id span{font-size:.78rem;color:#B9C6E0;}
+.shine-status{
+  position:absolute;top:16px;right:16px;padding:6px 14px;border-radius:999px;
+  font-size:.76rem;font-weight:800;background:rgba(255,255,255,.16);color:#fff;backdrop-filter:blur(6px);
+}
+.shine-status.listening{background:var(--good);}
+.shine-status.thinking{background:var(--gold);color:var(--navy);}
+.shine-status.speaking{background:var(--gold-2);color:var(--navy);}
+.shine-status.error{background:var(--bad);}
+.shine-status.connecting{background:rgba(255,255,255,.28);}
+
+/* --- panneau de conversation --- */
+.shine-panel{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);
+  padding:22px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:14px;
+}
+.shine-head h2{font-size:1.25rem;color:var(--navy);}
+.shine-head p{color:var(--muted);font-size:.9rem;margin-top:4px;}
+.shine-notice{display:none;font-size:.86rem;padding:11px 13px;border-radius:10px;line-height:1.5;}
+.shine-notice.show{display:block;}
+.shine-notice.warn{background:rgba(245,166,35,.14);color:#8A5B08;}
+.shine-notice.err{background:rgba(226,86,75,.12);color:#9C2F26;}
+.shine-log{
+  min-height:220px;max-height:44vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;
+  background:#FAFBFF;border:1px solid var(--line);border-radius:var(--r-m);padding:14px;
+}
+.shine-empty{color:var(--muted);font-size:.88rem;margin:auto;text-align:center;}
+.shine-line{max-width:88%;padding:10px 13px;border-radius:14px;font-size:.93rem;line-height:1.5;}
+.shine-line .who{display:block;font-size:.68rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;opacity:.65;margin-bottom:3px;}
+.shine-line.her{background:#fff;border:1px solid var(--line);color:var(--text);align-self:flex-start;}
+.shine-line.me{background:var(--navy);color:#fff;align-self:flex-end;}
+.shine-actions{display:flex;flex-wrap:wrap;gap:10px;}
+.shine-mic{
+  flex:1;min-width:200px;background:linear-gradient(120deg,var(--gold),var(--gold-2));color:var(--navy);
+  font-weight:800;font-size:.94rem;padding:13px 20px;border-radius:12px;box-shadow:var(--shadow-sm);
+  transition:transform .2s,filter .2s;
+}
+.shine-mic:hover:not(:disabled){transform:translateY(-2px);}
+.shine-mic:disabled{opacity:.6;cursor:wait;}
+.shine-mic.live{background:var(--bad);color:#fff;}
+.shine-mute{
+  border:1.6px solid var(--line);border-radius:12px;padding:13px 18px;font-weight:700;font-size:.88rem;
+  color:var(--navy);background:#fff;
+}
+.shine-compose{display:flex;gap:8px;}
+.shine-compose input{
+  flex:1;border:1.6px solid var(--line);border-radius:12px;padding:12px 14px;
+  font-family:'Manrope',sans-serif;font-size:.94rem;background:#fff;color:var(--text);
+}
+.shine-compose input:focus{outline:none;border-color:var(--navy-3);}
+.shine-send{
+  width:46px;border-radius:12px;background:var(--navy);color:#fff;display:inline-flex;
+  align-items:center;justify-content:center;flex:0 0 auto;
+}
+.shine-send svg{width:19px;height:19px;}
+.shine-foot{font-size:.8rem;color:var(--muted);line-height:1.5;}
+
+@media (max-width:920px){
+  .shine-grid{grid-template-columns:1fr;}
+  .shine-stage{min-height:320px;padding:18px;}
+  #shineFace{width:min(72%,230px);}
+  .shine-log{max-height:38vh;}
+}
+
 </style>
 </head>
 <body>
@@ -967,6 +1058,7 @@ body.app-mode{background:transparent;}
   <nav class="app-nav" id="appNav">
     <button class="nav-btn active" data-target="view-home">Accueil</button>
     <button class="nav-btn" data-target="view-courses">Cours</button>
+    <button class="nav-btn" data-target="view-shine">SHINE AI</button>
     <button class="nav-btn" data-target="view-exams">Salle d'examen</button>
     <button class="nav-btn" data-target="view-test">Test de niveau</button>
   </nav>
@@ -993,6 +1085,7 @@ body.app-mode{background:transparent;}
       <div class="dash-actions">
         <button class="btn-gold-sm" id="goResume">Reprendre mon cours</button>
         <button class="btn-ghost-light" id="goRooms">Entrer en salle d'examen</button>
+        <button class="btn-ghost-light" id="goShine">🎙️ Parler avec SHINE</button>
         <button class="btn-ghost-light" id="goTest">Refaire le test de niveau</button>
       </div>
     </div>
@@ -1043,6 +1136,11 @@ body.app-mode{background:transparent;}
     </div>
     <div class="module-grid scene" id="moduleGrid"></div>
   </div>
+</section>
+
+<!-- ============================ SHINE — PROFESSEURE IA ============================ -->
+<section id="view-shine" class="view">
+  <div class="shine-shell" id="shineShell"></div>
 </section>
 
 <!-- ============================ LEÇON ============================ -->
@@ -4038,6 +4136,672 @@ window.TS = (function(){
   window.FA_auth = { setMode: setMode };
 })();
 
+/* ===== js/services/shine-live.js ===== */
+/* =========================================================
+   Talk & Shine — service de conversation temps réel avec SHINE
+   ---------------------------------------------------------
+   Chaîne : micro → PCM 16 kHz → Gemini Live → PCM 24 kHz → haut-parleur
+   Le navigateur n'obtient jamais la clé : il demande un jeton
+   éphémère à /api/token, qui expire en quelques minutes.
+
+   États exposés : idle · connecting · listening · thinking · speaking · error
+   ========================================================= */
+window.ShineLive = (function () {
+  'use strict';
+
+  /* Build ESM du SDK officiel : on ne réimplémente pas le protocole
+     WebSocket de Gemini à la main. */
+  var SDK_URL = 'https://cdn.jsdelivr.net/npm/@google/genai@1.30.0/+esm';
+
+  var IN_RATE = 16000;    // imposé par l'API : PCM 16 bits mono 16 kHz
+  var OUT_RATE = 24000;   // l'API répond en PCM 16 bits mono 24 kHz
+  var IDLE_TIMEOUT_MS = 90 * 1000;   // fermeture auto si plus personne ne parle
+
+  var listeners = { state: [], transcript: [], error: [] };
+  var state = 'idle';
+
+  var session = null, sdk = null;
+  var micCtx = null, micStream = null, micNode = null, micSource = null;
+  var outCtx = null, playHead = 0, sources = [];
+  var analyser = null, levelBuf = null;   // amplitude réelle de la voix de SHINE
+  var idleTimer = null, hardTimer = null;
+  var micEnabled = true;
+
+  /* ---------------- événements ---------------- */
+  function on(evt, cb) { if (listeners[evt]) listeners[evt].push(cb); }
+  function emit(evt, payload) { (listeners[evt] || []).forEach(function (cb) { try { cb(payload); } catch (e) {} }); }
+  function setState(s) { if (s !== state) { state = s; emit('state', s); } }
+  function fail(message, detail) {
+    setState('error');
+    emit('error', { message: message, detail: detail || '' });
+  }
+
+  /* ---------------- capacités du navigateur ---------------- */
+  function support() {
+    var secure = window.isSecureContext || location.hostname === 'localhost';
+    return {
+      websocket: typeof WebSocket !== 'undefined',
+      audio: !!(window.AudioContext || window.webkitAudioContext),
+      // Lire AudioContext.prototype.audioWorklet déclenche le getter sans instance
+      // (« Illegal invocation ») : on teste la présence du constructeur à la place.
+      worklet: typeof window.AudioWorkletNode !== 'undefined',
+      mic: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+      secure: secure,
+      // La voix exige toutes ces briques ; sinon on bascule en texte.
+      voice: secure && !!(window.AudioContext || window.webkitAudioContext) &&
+             !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) &&
+             typeof WebSocket !== 'undefined'
+    };
+  }
+
+  /* ---------------- utilitaires audio ---------------- */
+  function floatToPCM16(f32) {
+    var out = new Int16Array(f32.length);
+    for (var i = 0; i < f32.length; i++) {
+      var s = Math.max(-1, Math.min(1, f32[i]));
+      out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    return out;
+  }
+  function toBase64(bytes) {
+    var bin = '', chunk = 0x8000;
+    for (var i = 0; i < bytes.length; i += chunk) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(bin);
+  }
+  function fromBase64(b64) {
+    var bin = atob(b64), out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  /* Le worklet vit dans un Blob : pas de fichier séparé à déployer. */
+  var WORKLET_SRC = [
+    'class Cap extends AudioWorkletProcessor {',
+    '  process(inputs){',
+    '    const ch = inputs[0] && inputs[0][0];',
+    '    if (ch && ch.length) this.port.postMessage(new Float32Array(ch));',
+    '    return true;',
+    '  }',
+    '}',
+    'registerProcessor("shine-capture", Cap);'
+  ].join('\n');
+
+  /* ---------------- lecture de la voix de SHINE ---------------- */
+  function playChunk(bytes) {
+    if (!outCtx) return;
+    var pcm = new Int16Array(bytes.buffer, bytes.byteOffset, Math.floor(bytes.byteLength / 2));
+    var buf = outCtx.createBuffer(1, pcm.length, OUT_RATE);
+    var ch = buf.getChannelData(0);
+    for (var i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
+
+    var src = outCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(analyser || outCtx.destination);
+    var now = outCtx.currentTime;
+    if (playHead < now) playHead = now;
+    src.start(playHead);
+    playHead += buf.duration;
+    sources.push(src);
+    src.onended = function () {
+      var i = sources.indexOf(src);
+      if (i >= 0) sources.splice(i, 1);
+      // Plus rien en file : SHINE a fini de parler, elle réécoute.
+      if (!sources.length && state === 'speaking') setState(micEnabled ? 'listening' : 'idle');
+    };
+    setState('speaking');
+  }
+
+  /* Interruption : l'élève reprend la parole, on coupe net. */
+  function stopPlayback() {
+    sources.forEach(function (s) { try { s.stop(); } catch (e) {} });
+    sources = [];
+    playHead = outCtx ? outCtx.currentTime : 0;
+  }
+
+  /* ---------------- minuteries (contrôle des coûts) ---------------- */
+  function touchIdle() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function () {
+      stop('Session fermée après 90 secondes sans échange.');
+    }, IDLE_TIMEOUT_MS);
+  }
+
+  /* ---------------- démarrage ---------------- */
+  async function start(profile, opts) {
+    opts = opts || {};
+    if (session) return;
+    setState('connecting');
+
+    /* 1. jeton éphémère — la clé reste sur le serveur */
+    var res, info;
+    try {
+      res = await fetch('/api/token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          level: profile.level || 'A2',
+          name: profile.name || '',
+          topic: profile.topic || ''
+        })
+      });
+      info = await res.json();
+    } catch (e) {
+      fail("Le service vocal est injoignable. Vérifie ta connexion.", String(e));
+      return;
+    }
+    if (!res.ok) {
+      var msg = info && info.message ? info.message : 'Le service vocal a refusé la connexion.';
+      if (info && info.error === 'not_configured') msg = "SHINE vocal n'est pas encore configuré sur ce site (clé Gemini absente).";
+      if (info && info.error === 'rate_limited') msg = info.message;
+      fail(msg, info && info.error);
+      return;
+    }
+
+    /* 2. SDK officiel */
+    try {
+      if (!sdk) sdk = await import(SDK_URL);
+    } catch (e) {
+      fail("Impossible de charger le moteur vocal (bloqué par le réseau ?).", String(e));
+      return;
+    }
+
+    /* 3. sortie audio prête avant la connexion (geste utilisateur requis sur iOS) */
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      outCtx = new AC({ sampleRate: OUT_RATE });
+      if (outCtx.state === 'suspended') await outCtx.resume();
+      // L'analyseur mesure l'amplitude réelle de la voix : c'est lui qui
+      // pilote l'ouverture de la bouche de l'avatar (pas une animation
+      // décorative jouée en aveugle).
+      analyser = outCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.6;
+      levelBuf = new Uint8Array(analyser.fftSize);
+      analyser.connect(outCtx.destination);
+      playHead = outCtx.currentTime;
+    } catch (e) {
+      fail("Le navigateur refuse de jouer du son.", String(e));
+      return;
+    }
+
+    /* 4. session Live */
+    var ai;
+    try {
+      ai = new sdk.GoogleGenAI({
+        apiKey: info.token,
+        httpOptions: { apiVersion: info.apiVersion || 'v1alpha' }
+      });
+      session = await ai.live.connect({
+        model: info.model,
+        // La configuration pédagogique est déjà verrouillée dans le jeton.
+        config: { responseModalities: ['AUDIO'] },
+        callbacks: {
+          onopen: function () { touchIdle(); setState(micEnabled ? 'listening' : 'idle'); },
+          onmessage: handleMessage,
+          onerror: function (e) { fail("La conversation a été interrompue.", (e && e.message) || String(e)); },
+          onclose: function () { cleanup(); setState('idle'); }
+        }
+      });
+    } catch (e) {
+      cleanup();
+      fail("SHINE n'a pas pu ouvrir la session.", (e && e.message) || String(e));
+      return;
+    }
+
+    /* 5. plafond dur de session */
+    clearTimeout(hardTimer);
+    hardTimer = setTimeout(function () {
+      stop('Session terminée : durée maximale atteinte.');
+    }, Math.max(30000, (info.expiresInMs || 600000) - 5000));
+
+    /* 6. micro — facultatif : le mode texte fonctionne sans */
+    if (opts.voice !== false) {
+      try { await openMic(); }
+      catch (e) {
+        emit('error', { message: "Micro indisponible : tu peux écrire à SHINE.", detail: String(e), recoverable: true });
+        micEnabled = false;
+        setState('idle');
+      }
+    } else {
+      micEnabled = false;
+      setState('idle');
+    }
+  }
+
+  async function openMic() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+    });
+    micCtx = new AC({ sampleRate: IN_RATE });
+    if (micCtx.state === 'suspended') await micCtx.resume();
+
+    var blob = new Blob([WORKLET_SRC], { type: 'application/javascript' });
+    var url = URL.createObjectURL(blob);
+    await micCtx.audioWorklet.addModule(url);
+    URL.revokeObjectURL(url);
+
+    micSource = micCtx.createMediaStreamSource(micStream);
+    micNode = new AudioWorkletNode(micCtx, 'shine-capture');
+    micNode.port.onmessage = function (ev) {
+      if (!session || !micEnabled) return;
+      var pcm = floatToPCM16(ev.data);
+      try {
+        session.sendRealtimeInput({
+          audio: { data: toBase64(new Uint8Array(pcm.buffer)), mimeType: 'audio/pcm;rate=' + IN_RATE }
+        });
+      } catch (e) { /* session déjà fermée */ }
+    };
+    micSource.connect(micNode);
+    // Nœud muet : on capture sans réinjecter le micro dans les haut-parleurs.
+    var mute = micCtx.createGain();
+    mute.gain.value = 0;
+    micNode.connect(mute).connect(micCtx.destination);
+    micEnabled = true;
+    setState('listening');
+  }
+
+  /* ---------------- messages du serveur ---------------- */
+  function handleMessage(message) {
+    touchIdle();
+    var sc = message && message.serverContent;
+
+    if (message && message.setupComplete) { setState(micEnabled ? 'listening' : 'idle'); return; }
+    if (!sc) return;
+
+    // L'élève a repris la parole pendant que SHINE parlait.
+    if (sc.interrupted) { stopPlayback(); setState('listening'); return; }
+
+    if (sc.inputTranscription && sc.inputTranscription.text) {
+      emit('transcript', { who: 'user', text: sc.inputTranscription.text, partial: true });
+      if (state === 'listening') setState('thinking');
+    }
+    if (sc.outputTranscription && sc.outputTranscription.text) {
+      emit('transcript', { who: 'shine', text: sc.outputTranscription.text, partial: true });
+    }
+
+    var parts = sc.modelTurn && sc.modelTurn.parts;
+    if (parts) {
+      parts.forEach(function (p) {
+        if (p.inlineData && p.inlineData.data) playChunk(fromBase64(p.inlineData.data));
+        else if (p.text) emit('transcript', { who: 'shine', text: p.text, partial: true });
+      });
+    }
+
+    if (sc.turnComplete) {
+      emit('transcript', { who: null, text: '', turnComplete: true });
+      if (!sources.length) setState(micEnabled ? 'listening' : 'idle');
+    }
+  }
+
+  /* ---------------- mode texte ---------------- */
+  function sendText(text) {
+    if (!session || !text) return false;
+    touchIdle();
+    emit('transcript', { who: 'user', text: text, final: true });
+    setState('thinking');
+    try {
+      session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: text }] }], turnComplete: true });
+      return true;
+    } catch (e) {
+      fail("Le message n'est pas parti.", String(e));
+      return false;
+    }
+  }
+
+  function setMic(enabled) {
+    micEnabled = !!enabled;
+    if (!micEnabled) setState(state === 'speaking' ? 'speaking' : 'idle');
+    else if (state === 'idle') setState('listening');
+    return micEnabled;
+  }
+
+  /* ---------------- arrêt propre ---------------- */
+  function cleanup() {
+    clearTimeout(idleTimer); clearTimeout(hardTimer);
+    stopPlayback();
+    if (micNode) { try { micNode.port.onmessage = null; micNode.disconnect(); } catch (e) {} }
+    if (micSource) { try { micSource.disconnect(); } catch (e) {} }
+    if (micStream) { micStream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} }); }
+    if (micCtx) { try { micCtx.close(); } catch (e) {} }
+    if (outCtx) { try { outCtx.close(); } catch (e) {} }
+    micNode = micSource = micStream = micCtx = outCtx = null;
+    analyser = null; levelBuf = null;
+    session = null;
+  }
+
+  function stop(reason) {
+    if (session) { try { session.close(); } catch (e) {} }
+    cleanup();
+    setState('idle');
+    if (reason) emit('error', { message: reason, recoverable: true, ended: true });
+  }
+
+  window.addEventListener('pagehide', function () { stop(); });
+
+  return {
+    support: support,
+    start: start,
+    stop: stop,
+    sendText: sendText,
+    setMic: setMic,
+    on: on,
+    getState: function () { return state; },
+    /* Amplitude instantanée de la voix de SHINE, 0 → 1.
+       Renvoie 0 si aucune session audio n'est ouverte. */
+    getOutputLevel: function () {
+      if (!analyser || !levelBuf) return 0;
+      analyser.getByteTimeDomainData(levelBuf);
+      var peak = 0;
+      for (var i = 0; i < levelBuf.length; i++) {
+        var v = Math.abs(levelBuf[i] - 128) / 128;
+        if (v > peak) peak = v;
+      }
+      return Math.min(1, peak * 2.2);
+    }
+  };
+})();
+
+/* ===== js/shine.js ===== */
+/* =========================================================
+   Talk & Shine — page SHINE : avatar, conversation, états
+   ---------------------------------------------------------
+   L'avatar est dessiné en SVG animé. Sa bouche suit l'amplitude
+   réelle de la voix renvoyée par Gemini (analyse audio en direct),
+   pas une boucle décorative. Ce n'est pas du lip-sync phonétique :
+   la bouche s'ouvre au rythme du son, elle ne forme pas les
+   phonèmes un par un.
+   ========================================================= */
+window.Shine = (function () {
+  'use strict';
+  var $ = TS.$, $$ = TS.$$, esc = TS.escapeHTML, state = TS.state;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var wired = false, raf = null, topic = '';
+  var lastWho = null, liveLine = null;
+
+  var LABELS = {
+    idle:       { txt: 'Prête',        cls: 'idle' },
+    connecting: { txt: 'Connexion…',   cls: 'connecting' },
+    listening:  { txt: "Je t'écoute",  cls: 'listening' },
+    thinking:   { txt: 'Je réfléchis…',cls: 'thinking' },
+    speaking:   { txt: 'Je parle',     cls: 'speaking' },
+    error:      { txt: 'Interrompu',   cls: 'error' }
+  };
+
+  /* ---------------- avatar SVG ---------------- */
+  function avatarSVG() {
+    return '' +
+    '<svg id="shineFace" viewBox="0 0 220 240" role="img" aria-label="SHINE, professeure d\'anglais">' +
+      '<defs>' +
+        '<linearGradient id="sgSkin" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="#8D5A3B"/><stop offset="100%" stop-color="#6E4229"/></linearGradient>' +
+        '<linearGradient id="sgHair" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0%" stop-color="#241B14"/><stop offset="100%" stop-color="#0F0B08"/></linearGradient>' +
+        '<linearGradient id="sgTop" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0%" stop-color="#1B3160"/><stop offset="100%" stop-color="#24406F"/></linearGradient>' +
+        '<radialGradient id="sgHalo" cx="50%" cy="45%" r="55%">' +
+          '<stop offset="0%" stop-color="#F5A623" stop-opacity=".38"/>' +
+          '<stop offset="100%" stop-color="#F5A623" stop-opacity="0"/></radialGradient>' +
+      '</defs>' +
+      '<ellipse id="shineHalo" cx="110" cy="112" rx="104" ry="108" fill="url(#sgHalo)"/>' +
+      '<g id="shineBody">' +
+        '<path d="M34 240c6-40 34-58 76-58s70 18 76 58z" fill="url(#sgTop)"/>' +
+        '<path d="M110 182c-9 12-16 20-16 20l-9-14 12-10zM110 182c9 12 16 20 16 20l9-14-12-10z" fill="#F3F6FC" opacity=".9"/>' +
+      '</g>' +
+      '<g id="shineHead">' +
+        '<path d="M46 96c0-42 28-70 64-70s64 28 64 70c0 10-2 18-4 24 8 2 10 12 4 18-4 4-9 4-12 2-9 26-30 44-52 44S67 166 58 140c-3 2-8 2-12-2-6-6-4-16 4-18-2-6-4-14-4-24z" fill="url(#sgSkin)"/>' +
+        '<path d="M42 104C42 52 72 20 110 20s68 32 68 84c0 8-1 14-2 18-4-16-6-30-10-40-16 12-40 18-64 14-14-2-24-8-30-14-4 10-6 24-8 40-1-4-2-10-2-18z" fill="url(#sgHair)"/>' +
+        '<path d="M40 92c-10 22-12 52-6 84-14-30-14-70 6-84zM180 92c10 22 12 52 6 84 14-30 14-70-6-84z" fill="url(#sgHair)"/>' +
+        '<g id="shineBrows" fill="none" stroke="#2A1D14" stroke-width="4" stroke-linecap="round">' +
+          '<path d="M72 94q12-7 24-1"/><path d="M124 93q12-6 24 1"/>' +
+        '</g>' +
+        '<g id="shineEyes">' +
+          '<ellipse cx="84" cy="109" rx="11" ry="6.6" fill="#FBF7F3"/>' +
+          '<ellipse cx="136" cy="109" rx="11" ry="6.6" fill="#FBF7F3"/>' +
+          '<g id="shinePupils">' +
+            '<circle cx="84" cy="109" r="4.6" fill="#2A1C12"/><circle cx="136" cy="109" r="4.6" fill="#2A1C12"/>' +
+            '<circle cx="85.6" cy="107.2" r="1.5" fill="#fff" opacity=".9"/><circle cx="137.6" cy="107.2" r="1.5" fill="#fff" opacity=".9"/>' +
+          '</g>' +
+          // trait de paupière : donne de la profondeur au regard
+          '<path d="M73 105q11-6 22 0" fill="none" stroke="#3A281B" stroke-width="2.2" stroke-linecap="round"/>' +
+          '<path d="M125 105q11-6 22 0" fill="none" stroke="#3A281B" stroke-width="2.2" stroke-linecap="round"/>' +
+          '<g id="shineLids" fill="url(#sgSkin)">' +
+            '<rect x="72" y="101" width="24" height="0" rx="2"/><rect x="124" y="101" width="24" height="0" rx="2"/>' +
+          '</g>' +
+        '</g>' +
+        '<path d="M110 118c-3 8-6 12-2 16 2 2 6 2 8 0" fill="none" stroke="#4E301D" stroke-width="3" stroke-linecap="round"/>' +
+        '<g id="shineMouth">' +
+          '<path id="shineLips" d="M93 151q17 9 34 0" fill="none" stroke="#43231A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</g>' +
+        '<ellipse cx="66" cy="134" rx="9" ry="6" fill="#C4735A" opacity=".22"/>' +
+        '<ellipse cx="154" cy="134" rx="9" ry="6" fill="#C4735A" opacity=".22"/>' +
+      '</g>' +
+    '</svg>';
+  }
+
+  /* ---------------- animation ---------------- */
+  var t0 = performance.now(), nextBlink = 1200, blinkPhase = -1;
+  function animate(now) {
+    raf = requestAnimationFrame(animate);
+    var head = document.getElementById('shineHead');
+    if (!head) return;
+    var t = (now - t0) / 1000;
+    var st = ShineLive.getState();
+
+    /* respiration + micro-mouvements de tête : discrets, jamais figés */
+    var breathe = Math.sin(t * 1.1) * 1.4;
+    var sway = Math.sin(t * 0.42) * (st === 'speaking' ? 2.6 : 1.4);
+    var tilt = Math.sin(t * 0.31) * (st === 'thinking' ? 2.4 : 0.9);
+    head.setAttribute('transform',
+      'translate(' + sway.toFixed(2) + ',' + breathe.toFixed(2) + ') rotate(' + tilt.toFixed(2) + ' 110 120)');
+
+    /* clignement : intervalle irrégulier, comme un vrai œil */
+    var lids = document.getElementById('shineLids');
+    if (lids) {
+      var ms = now - t0;
+      if (blinkPhase < 0 && ms > nextBlink) { blinkPhase = 0; }
+      var h = 0;
+      if (blinkPhase >= 0) {
+        blinkPhase += 1 / 60;
+        h = blinkPhase < 0.07 ? (blinkPhase / 0.07) * 22 : Math.max(0, (1 - (blinkPhase - 0.07) / 0.09)) * 22;
+        if (blinkPhase > 0.17) { blinkPhase = -1; nextBlink = ms + 1800 + Math.random() * 3600; }
+      }
+      $$('rect', lids).forEach(function (r) { r.setAttribute('height', h.toFixed(1)); });
+    }
+
+    /* regard : suit doucement, se détourne pendant la réflexion */
+    var pupils = document.getElementById('shinePupils');
+    if (pupils) {
+      var gx = st === 'thinking' ? Math.sin(t * 0.8) * 3 - 2 : Math.sin(t * 0.5) * 1.6;
+      var gy = st === 'thinking' ? -2.5 : Math.cos(t * 0.4) * 1;
+      pupils.setAttribute('transform', 'translate(' + gx.toFixed(2) + ',' + gy.toFixed(2) + ')');
+    }
+
+    /* bouche : pilotée par l'amplitude réelle de la voix */
+    var lips = document.getElementById('shineLips');
+    if (lips) {
+      var lvl = st === 'speaking' ? ShineLive.getOutputLevel() : 0;
+      var open = lvl * 17;                       // ouverture verticale
+      var wide = 18 - lvl * 4;                   // la bouche s'arrondit
+      if (st === 'listening' && open < 0.4) open = 0;
+      var d = open > 0.6
+        ? 'M' + (110 - wide) + ' 150 q' + wide + ' ' + (open * 1.5) + ' ' + (wide * 2) + ' 0 q-' + wide + ' ' + (open * 2.2) + ' -' + (wide * 2) + ' 0 z'
+        : (st === 'idle' || st === 'listening')
+          ? 'M93 151q17 9 34 0'                   // léger sourire au repos
+          : 'M95 151q15 5 30 0';
+      lips.setAttribute('d', d);
+      lips.setAttribute('fill', open > 0.6 ? '#2A1109' : 'none');
+    }
+
+    /* halo : pulse seulement quand elle parle */
+    var halo = document.getElementById('shineHalo');
+    if (halo) {
+      var s = st === 'speaking' ? 1 + ShineLive.getOutputLevel() * 0.06 : 1;
+      halo.setAttribute('transform', 'translate(110,112) scale(' + s.toFixed(3) + ') translate(-110,-112)');
+    }
+  }
+
+  /* ---------------- transcription ---------------- */
+  function addLine(who, text, opts) {
+    var log = $('#shineLog');
+    if (!log) return;
+    var empty = $('.shine-empty', log);
+    if (empty) empty.remove();
+
+    if (opts && opts.turnComplete) { lastWho = null; liveLine = null; return; }
+    if (!text) return;
+
+    if (who === lastWho && liveLine && !(opts && opts.final)) {
+      liveLine.querySelector('.b').textContent += text;
+    } else {
+      var el = document.createElement('div');
+      el.className = 'shine-line ' + (who === 'user' ? 'me' : 'her');
+      el.innerHTML = '<span class="who">' + (who === 'user' ? 'Toi' : 'SHINE') + '</span><span class="b"></span>';
+      el.querySelector('.b').textContent = text;
+      log.appendChild(el);
+      liveLine = (opts && opts.final) ? null : el;
+      lastWho = (opts && opts.final) ? null : who;
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function setStatus(st) {
+    var L = LABELS[st] || LABELS.idle;
+    var chip = $('#shineStatus');
+    if (chip) { chip.textContent = L.txt; chip.className = 'shine-status ' + L.cls; }
+    var stage = $('#shineStage');
+    if (stage) stage.className = 'shine-stage ' + L.cls;
+
+    var mic = $('#shineMic');
+    if (mic) {
+      var live = st !== 'idle' && st !== 'error' && st !== 'connecting';
+      mic.classList.toggle('live', live);
+      mic.textContent = live ? 'Terminer la conversation' : 'Parler avec SHINE';
+      mic.disabled = st === 'connecting';
+    }
+    var muteBtn = $('#shineMute');
+    if (muteBtn) muteBtn.style.display = (st === 'idle' || st === 'error' || st === 'connecting') ? 'none' : 'inline-flex';
+  }
+
+  function notice(msg, kind) {
+    var box = $('#shineNotice');
+    if (!box) return;
+    box.textContent = msg || '';
+    box.className = 'shine-notice' + (msg ? ' show' : '') + (kind ? ' ' + kind : '');
+  }
+
+  /* ---------------- rendu de la page ---------------- */
+  function render(withTopic) {
+    topic = withTopic || '';
+    var sup = ShineLive.support();
+
+    $('#shineShell').innerHTML =
+      '<div class="shine-grid">' +
+        '<div class="shine-stage idle" id="shineStage">' +
+          avatarSVG() +
+          '<div class="shine-id"><b>SHINE</b><span>Professeure d\'anglais · Talk &amp; Shine</span></div>' +
+          '<span class="shine-status idle" id="shineStatus">Prête</span>' +
+        '</div>' +
+
+        '<div class="shine-panel">' +
+          '<div class="shine-head">' +
+            '<h2>Parle anglais avec SHINE</h2>' +
+            '<p>Elle t\'écoute, te répond à voix haute et corrige une erreur à la fois. Niveau : <b>' + esc(state.level || 'A2') + '</b>' +
+            (topic ? ' · sujet du jour : <b>' + esc(topic) + '</b>' : '') + '</p>' +
+          '</div>' +
+
+          '<div class="shine-notice" id="shineNotice"></div>' +
+
+          '<div class="shine-log" id="shineLog">' +
+            '<p class="shine-empty">La transcription de votre conversation s\'affichera ici, ligne par ligne.</p>' +
+          '</div>' +
+
+          '<div class="shine-actions">' +
+            '<button type="button" class="shine-mic" id="shineMic">Parler avec SHINE</button>' +
+            '<button type="button" class="shine-mute" id="shineMute" style="display:none;">Couper le micro</button>' +
+          '</div>' +
+
+          '<form class="shine-compose" id="shineCompose">' +
+            '<input type="text" id="shineInput" autocomplete="off" placeholder="…ou écris ton message à SHINE">' +
+            '<button type="submit" class="shine-send" aria-label="Envoyer">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>' +
+            '</button>' +
+          '</form>' +
+
+          '<p class="shine-foot" id="shineFoot"></p>' +
+        '</div>' +
+      '</div>';
+
+    /* Message d'aptitude honnête, avant toute tentative */
+    var foot = $('#shineFoot');
+    if (!sup.secure) {
+      foot.innerHTML = "⚠️ Le micro exige une adresse <b>https://</b>. Ouvert en fichier local, seul le mode écrit fonctionne.";
+    } else if (!sup.voice) {
+      foot.innerHTML = "⚠️ Ce navigateur ne permet pas la conversation vocale. Le mode écrit reste disponible.";
+    } else {
+      foot.innerHTML = "La session se ferme seule après 90 secondes de silence, et au bout de 10 minutes.";
+    }
+
+    if (!wired) wire();
+    if (!raf) raf = requestAnimationFrame(animate);
+    setStatus(ShineLive.getState());
+  }
+
+  function wire() {
+    wired = true;
+
+    ShineLive.on('state', setStatus);
+    ShineLive.on('transcript', function (t) { addLine(t.who, t.text, t); });
+    ShineLive.on('error', function (e) {
+      notice(e.message, e.recoverable ? 'warn' : 'err');
+      if (!e.recoverable) TS.toast(e.message, 'err');
+    });
+
+    document.addEventListener('click', function (ev) {
+      var mic = ev.target.closest && ev.target.closest('#shineMic');
+      if (mic) {
+        var st = ShineLive.getState();
+        if (st === 'idle' || st === 'error') {
+          notice('');
+          ShineLive.start(
+            { level: state.level || 'A2', name: state.name || '', topic: topic },
+            { voice: ShineLive.support().voice }
+          );
+        } else {
+          ShineLive.stop();
+        }
+        return;
+      }
+      var mute = ev.target.closest && ev.target.closest('#shineMute');
+      if (mute) {
+        var on = ShineLive.setMic(mute.dataset.off === '1');
+        mute.dataset.off = on ? '0' : '1';
+        mute.textContent = on ? 'Couper le micro' : 'Réactiver le micro';
+      }
+    });
+
+    document.addEventListener('submit', function (ev) {
+      if (!ev.target.matches('#shineCompose')) return;
+      ev.preventDefault();
+      var input = $('#shineInput');
+      var txt = input.value.trim();
+      if (!txt) return;
+      if (ShineLive.getState() === 'idle' || ShineLive.getState() === 'error') {
+        notice("Ouvre d'abord une conversation avec le bouton ci-dessus.", 'warn');
+        return;
+      }
+      if (ShineLive.sendText(txt)) input.value = '';
+    });
+  }
+
+  function leave() { ShineLive.stop(); if (raf) { cancelAnimationFrame(raf); raf = null; } }
+
+  return { render: render, leave: leave };
+})();
+
 /* ===== js/app.js ===== */
 /* =========================================================
    Forever Academy — logique de l'application
@@ -4052,6 +4816,8 @@ window.FA = (function(){
      ROUTEUR
      ======================================================= */
   function showView(id){
+    // Quitter SHINE ferme la session vocale : jamais de micro ouvert en arrière-plan.
+    if(id !== 'view-shine' && window.Shine) Shine.leave();
     $$('.view').forEach(function(v){ v.classList.remove('active'); });
     var el = document.getElementById(id);
     if(el) el.classList.add('active');
@@ -4069,6 +4835,7 @@ window.FA = (function(){
       stopExam();
       if(t === 'view-home') renderHome();
       if(t === 'view-courses') renderModules();
+      if(t === 'view-shine') Shine.render('');
       if(t === 'view-exams') renderRooms();
       if(t === 'view-test') startPlacement();
       showView(t);
@@ -4386,6 +5153,7 @@ window.FA = (function(){
     var id = state.lastModule || (TS.modulesOf(state.level || 'A1')[0] || {}).id;
     if(id) openLesson(id); else { renderModules(); showView('view-courses'); }
   });
+  $('#goShine').addEventListener('click', function(){ Shine.render(''); showView('view-shine'); });
   $('#goRooms').addEventListener('click', function(){ renderRooms(); showView('view-exams'); });
   $('#goTest').addEventListener('click', function(){ startPlacement(); showView('view-test'); });
 
@@ -4493,6 +5261,7 @@ window.FA = (function(){
       '<div id="exoHost"></div>' +
       '<div class="lesson-footer">' +
         '<button type="button" class="btn-outline-navy" id="lessonBack2">← Cours</button>' +
+        '<button type="button" class="btn-gold-sm" id="lessonShine">🎙️ Pratiquer cette leçon à l\'oral avec SHINE</button>' +
         (next ? '<button type="button" class="btn-gold-sm" id="lessonNext">Module suivant : ' + esc(next.title) + ' →</button>'
               : '<button type="button" class="btn-gold-sm" id="lessonRoom">Passer à la salle d\'examen ' + m.level + ' →</button>') +
       '</div>';
@@ -4510,6 +5279,12 @@ window.FA = (function(){
 
     $$('[data-say]', host).forEach(function(b){
       b.addEventListener('click', function(){ TS.speak(b.dataset.say); });
+    });
+    $('#lessonShine').addEventListener('click', function(){
+      // SHINE reçoit le sujet exact du module ouvert : la conversation
+      // porte sur ce que l'élève vient d'étudier.
+      Shine.render(m.title + ' (niveau ' + m.level + ') — ' + m.goal.replace(/<[^>]+>/g, ''));
+      showView('view-shine');
     });
     $('#lessonBack').addEventListener('click', backToCourses);
     $('#lessonBack2').addEventListener('click', backToCourses);

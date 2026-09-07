@@ -11,6 +11,8 @@ window.FA = (function(){
      ROUTEUR
      ======================================================= */
   function showView(id){
+    // Quitter SHINE ferme la session vocale : jamais de micro ouvert en arrière-plan.
+    if(id !== 'view-shine' && window.Shine) Shine.leave();
     $$('.view').forEach(function(v){ v.classList.remove('active'); });
     var el = document.getElementById(id);
     if(el) el.classList.add('active');
@@ -28,6 +30,7 @@ window.FA = (function(){
       stopExam();
       if(t === 'view-home') renderHome();
       if(t === 'view-courses') renderModules();
+      if(t === 'view-shine') Shine.render('');
       if(t === 'view-exams') renderRooms();
       if(t === 'view-test') startPlacement();
       showView(t);
@@ -345,6 +348,7 @@ window.FA = (function(){
     var id = state.lastModule || (TS.modulesOf(state.level || 'A1')[0] || {}).id;
     if(id) openLesson(id); else { renderModules(); showView('view-courses'); }
   });
+  $('#goShine').addEventListener('click', function(){ Shine.render(''); showView('view-shine'); });
   $('#goRooms').addEventListener('click', function(){ renderRooms(); showView('view-exams'); });
   $('#goTest').addEventListener('click', function(){ startPlacement(); showView('view-test'); });
 
@@ -452,6 +456,7 @@ window.FA = (function(){
       '<div id="exoHost"></div>' +
       '<div class="lesson-footer">' +
         '<button type="button" class="btn-outline-navy" id="lessonBack2">← Cours</button>' +
+        '<button type="button" class="btn-gold-sm" id="lessonShine">🎙️ Pratiquer cette leçon à l\'oral avec SHINE</button>' +
         (next ? '<button type="button" class="btn-gold-sm" id="lessonNext">Module suivant : ' + esc(next.title) + ' →</button>'
               : '<button type="button" class="btn-gold-sm" id="lessonRoom">Passer à la salle d\'examen ' + m.level + ' →</button>') +
       '</div>';
@@ -469,6 +474,12 @@ window.FA = (function(){
 
     $$('[data-say]', host).forEach(function(b){
       b.addEventListener('click', function(){ TS.speak(b.dataset.say); });
+    });
+    $('#lessonShine').addEventListener('click', function(){
+      // SHINE reçoit le sujet exact du module ouvert : la conversation
+      // porte sur ce que l'élève vient d'étudier.
+      Shine.render(m.title + ' (niveau ' + m.level + ') — ' + m.goal.replace(/<[^>]+>/g, ''));
+      showView('view-shine');
     });
     $('#lessonBack').addEventListener('click', backToCourses);
     $('#lessonBack2').addEventListener('click', backToCourses);
