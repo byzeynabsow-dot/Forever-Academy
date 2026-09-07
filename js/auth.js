@@ -138,6 +138,21 @@
       if(db[email]){ setFieldState('fEmail', false, 'Un compte existe déjà avec cet email. Connecte-toi.'); return; }
       busy = true;
       try{
+        if(Account.isServer()){
+          var r = await Account.signup(email, elPass.value, elName.value.trim());
+          if(!r.ok){
+            if(r.error === 'email_taken') setFieldState('fEmail', false, r.message);
+            else if(r.error === 'weak_password') setFieldState('fPass', false, r.message);
+            else TS.toast(r.message, 'err');
+            return;
+          }
+          TS.resetState();
+          state.name = r.user.name; state.email = r.user.email;
+          state.level = r.user.level || ''; state.guest = false; state.provider = 'server';
+          TS.toast('Bienvenue ' + state.name + ' ! Ton compte est créé.', 'ok');
+          enter();
+          return;
+        }
         var pw = await TS.makePasswordRecord(elPass.value);
         db[email] = { name: elName.value.trim(), email: email, pw: pw,
                       provider:'local', level:'', progress:{}, devoirs:{}, compos:{}, finals:{}, lastModule:'' };
@@ -152,9 +167,12 @@
 
     if(!(okE && okP)){ TS.toast('Vérifie les champs en rouge.', 'err'); return; }
     var u = db[email];
-    if(!u){ setFieldState('fEmail', false, "Aucun compte avec cet email. Crée un compte, c'est gratuit."); return; }
+    if(!u && !Account.isServer()){
+      setFieldState('fEmail', false, "Aucun compte avec cet email. Crée un compte, c'est gratuit.");
+      return;
+    }
 
-    var wait = lockedFor(email);
+    var wait = Account.isServer() ? 0 : lockedFor(email);
     if(wait > 0){
       setFieldState('fPass', false, 'Trop de tentatives. Réessaie dans ' + Math.ceil(wait / 1000) + ' secondes.');
       return;
@@ -162,6 +180,30 @@
 
     busy = true;
     try{
+      if(Account.isServer()){
+        var sr = await Account.login(email, elPass.value);
+        if(!sr.ok){
+          if(sr.error === 'locked') setFieldState('fPass', false, sr.message);
+          else setFieldState('fPass', false, sr.message);
+          return;
+        }
+        TS.resetState();
+        state.name = sr.user.name; state.email = sr.user.email;
+        state.level = sr.user.level || ''; state.guest = false; state.provider = 'server';
+        var remote = await Account.pull();
+        if(remote){
+          state.level = remote.level || state.level;
+          state.progress = remote.progress || {};
+          state.devoirs = remote.devoirs || {};
+          state.compos = remote.compos || {};
+          state.finals = remote.finals || {};
+          state.granted = remote.granted || {};
+          state.lastModule = remote.lastModule || '';
+        }
+        TS.toast('Content de te revoir, ' + state.name + ' !', 'ok');
+        enter();
+        return;
+      }
       var res = await TS.verifyPassword(elPass.value, u);
       if(res.noCrypto){
         setFieldState('fPass', false, "Ce compte a été créé sur une page sécurisée (https). Ouvre le site en https pour t'y connecter.");

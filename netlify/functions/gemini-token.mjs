@@ -7,6 +7,8 @@
    un message d'erreur.
    ========================================================= */
 
+import { currentUser, sessionSecret } from '../lib/session.mjs';
+
 const API_HOST = 'https://generativelanguage.googleapis.com';
 
 /* Durées de vie volontairement courtes (contrôle des coûts) */
@@ -87,6 +89,20 @@ export default async (req, context) => {
     return json({ error: 'origin_refused', message: "Cette page n'est pas autorisée à ouvrir une session vocale." }, 403);
   }
 
+  /* Réservé aux élèves inscrits. Sans compte vérifié, l'endpoint serait
+     ouvert à tous et le quota partirait chez n'importe qui.
+     Si les comptes ne sont pas encore configurés (SESSION_SECRET absent),
+     on laisse passer : le site reste utilisable, protégé par les quotas
+     seuls — et le diagnostic le signale. */
+  const accountsOn = !!sessionSecret();
+  const who = accountsOn ? currentUser(req) : null;
+  if (accountsOn && !who) {
+    return json({
+      error: 'not_signed_in',
+      message: "Connecte-toi pour parler avec SHINE."
+    }, 401);
+  }
+
   /* Corps borné : rien à traiter au-delà de quelques kilo-octets. */
   const declared = Number(req.headers.get('content-length') || 0);
   if (declared > 4096) return json({ error: 'payload_too_large' }, 413);
@@ -105,7 +121,9 @@ export default async (req, context) => {
 
   const maxPerDay = Number(Netlify.env.get('GEMINI_TOKENS_PER_DAY') || 200);
 
-  const ip = context?.ip || req.headers.get('x-nf-client-connection-ip') || 'inconnu';
+  /* Avec un compte, on limite par compte : changer de réseau ne remet
+     plus le compteur à zéro. */
+  const ip = who || context?.ip || req.headers.get('x-nf-client-connection-ip') || 'inconnu';
   if (burstLimited(ip, maxPerHour)) {
     return json({
       error: 'rate_limited',
