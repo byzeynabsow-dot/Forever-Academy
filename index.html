@@ -181,6 +181,7 @@
     <button class="nav-btn" data-target="view-shine">SHINE AI</button>
     <button class="nav-btn" data-target="view-exams">Examens</button>
     <button class="nav-btn" data-target="view-test">Progression</button>
+    <button class="nav-btn" data-target="view-messages">Messages</button>
   </nav>
   <div class="header-right">
     <button class="bell" id="bellBtn" aria-label="Notifications" title="Notifications">
@@ -189,10 +190,10 @@
     </button>
     <span class="hello-chip" id="helloChip">Bonjour 👋</span>
     <span class="level-mini">Niveau <b id="levelMini">—</b></span>
-    <a class="wa-quick" href="https://wa.me/221782239495" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2z"/></svg>
+    <button type="button" class="wa-quick" id="headerMsg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Professeur
-    </a>
+    </button>
     <button class="icon-btn" id="logoutBtn" title="Se déconnecter" aria-label="Se déconnecter">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
     </button>
@@ -280,8 +281,8 @@
         <div><b>Talk &amp; Shine</b><span>Speak English. Build Your Future.</span></div>
       </div>
       <nav class="foot-links">
-        <a href="https://wa.me/221782239495" target="_blank" rel="noopener">Contact</a>
-        <a href="https://whatsapp.com/channel/0029Vb82wT62ZjCkdgLhfn2Q" target="_blank" rel="noopener">Chaîne WhatsApp</a>
+        <button type="button" class="foot-btn" id="footMsg">Écrire au professeur</button>
+        <a href="https://whatsapp.com/channel/0029Vb82wT62ZjCkdgLhfn2Q" target="_blank" rel="noopener">Chaîne WhatsApp ↗</a>
       </nav>
       <p class="foot-legal">Talk &amp; Shine © 2026. Tous droits réservés.</p>
     </div>
@@ -312,6 +313,7 @@
       </div>
       <span class="level-chip">Ton niveau : <span class="accent-italic" id="levelChipValue">—</span></span>
     </div>
+    <div class="unlock-bar" id="unlockBar"></div>
     <div class="filter-row" id="filterRow">
       <button class="filter-btn active" data-lvl="all">Tous</button>
       <button class="filter-btn" data-lvl="A1">A1</button>
@@ -321,6 +323,57 @@
       <button class="filter-btn" data-lvl="C1">C1</button>
     </div>
     <div class="module-grid scene" id="moduleGrid"></div>
+  </div>
+</section>
+
+<!-- ============================ MESSAGES ============================ -->
+<section id="view-messages" class="view">
+  <div class="shell">
+    <div class="section-head">
+      <div>
+        <h2>Écrire au professeur</h2>
+        <p>Tes messages partent directement d'ici. Pas besoin de quitter le site.</p>
+      </div>
+    </div>
+
+    <div class="msg-layout">
+      <form class="msg-form" id="msgForm" name="message-prof" method="POST"
+            data-netlify="true" netlify-honeypot="bot-field">
+        <input type="hidden" name="form-name" value="message-prof">
+        <p class="hidden-field"><label>Ne remplis pas ce champ : <input name="bot-field"></label></p>
+
+        <label class="msg-label" for="msgSubject">Objet</label>
+        <select id="msgSubject" name="objet" required>
+          <option value="Question sur un cours">Question sur un cours</option>
+          <option value="Correction d'une composition">Correction d'une composition</option>
+          <option value="Résultat d'examen">Résultat d'examen</option>
+          <option value="Demande de code d'accès">Demande de code d'accès</option>
+          <option value="Problème technique">Problème technique</option>
+          <option value="Autre">Autre</option>
+        </select>
+
+        <label class="msg-label" for="msgBody">Ton message</label>
+        <textarea id="msgBody" name="message" rows="8" required
+                  placeholder="Explique ta question au professeur…"></textarea>
+
+        <input type="hidden" name="eleve" id="msgWho">
+        <input type="hidden" name="niveau" id="msgLevel">
+        <input type="hidden" name="progression" id="msgProgress">
+
+        <div class="msg-actions">
+          <button type="submit" class="btn-gold-sm" id="msgSend">Envoyer au professeur</button>
+          <span class="msg-note" id="msgNote"></span>
+        </div>
+      </form>
+
+      <aside class="msg-side">
+        <h3>Ce que le professeur reçoit</h3>
+        <ul id="msgPreview"></ul>
+        <p class="msg-hint">Ton niveau et ta progression sont joints automatiquement : le professeur sait où tu en es sans que tu aies à l'expliquer.</p>
+        <h3 style="margin-top:18px;">Tes messages envoyés</h3>
+        <div id="msgHistory"></div>
+      </aside>
+    </div>
   </div>
 </section>
 

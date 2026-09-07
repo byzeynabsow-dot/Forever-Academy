@@ -664,3 +664,62 @@ body.app-mode{background:transparent;}
              mask-image:linear-gradient(180deg,#000 78%,transparent 99%);}
 .shine-stage.has-3d .shine-3d{-webkit-mask-image:linear-gradient(180deg,#000 86%,transparent 100%);
              mask-image:linear-gradient(180deg,#000 86%,transparent 100%);}
+
+/* --- cours verrouillés + code du professeur --- */
+.module-card.locked{opacity:.62;}
+.module-card.locked .icon-badge{filter:grayscale(1);}
+.tag-lock{background:var(--line);color:var(--muted);font-weight:800;font-size:.72rem;padding:4px 10px;border-radius:999px;}
+.lock-why{margin-top:9px;font-size:.78rem;color:var(--muted);line-height:1.45;border-top:1px dashed var(--line);padding-top:8px;}
+.unlock-bar{
+  display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-m);
+  padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm);
+}
+.unlock-text{font-size:.88rem;color:var(--text);}
+.unlock-form{display:flex;gap:8px;}
+.unlock-form input{
+  border:1.6px solid var(--line);border-radius:10px;padding:9px 12px;
+  font-family:'Manrope',sans-serif;font-size:.88rem;width:190px;background:#fff;color:var(--text);
+}
+.unlock-form input:focus{outline:none;border-color:var(--navy-3);}
+.unlock-form button{
+  background:var(--navy);color:#fff;border-radius:10px;padding:9px 16px;font-weight:800;font-size:.84rem;
+}
+@media (max-width:520px){ .unlock-form{width:100%;} .unlock-form input{flex:1;width:auto;} }
+
+/* --- messagerie interne --- */
+.hidden-field{display:none;}
+.msg-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.75fr);gap:20px;align-items:start;}
+.msg-form{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);
+  padding:22px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:8px;
+}
+.msg-label{font-weight:800;font-size:.82rem;color:var(--navy);margin-top:8px;}
+.msg-form select,.msg-form textarea{
+  border:1.6px solid var(--line);border-radius:12px;padding:12px 14px;
+  font-family:'Manrope',sans-serif;font-size:.94rem;background:#fff;color:var(--text);width:100%;
+}
+.msg-form textarea{resize:vertical;line-height:1.6;}
+.msg-form select:focus,.msg-form textarea:focus{outline:none;border-color:var(--navy-3);}
+.msg-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:14px;}
+.msg-note{font-size:.84rem;}
+.msg-note.ok{color:var(--good);font-weight:700;}
+.msg-note.err{color:var(--bad);font-weight:700;}
+.msg-side{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);
+  padding:20px;box-shadow:var(--shadow-sm);
+}
+.msg-side h3{font-size:.95rem;color:var(--navy);margin-bottom:10px;}
+.msg-side ul{list-style:none;display:grid;gap:7px;}
+.msg-side li{font-size:.84rem;color:#37415C;display:flex;gap:8px;}
+.msg-side li b{color:var(--navy);}
+.msg-hint{font-size:.78rem;color:var(--muted);margin-top:12px;line-height:1.5;}
+.msg-item{
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#FAFBFF;
+}
+.msg-item .mo{font-weight:800;font-size:.82rem;color:var(--navy);}
+.msg-item .md{font-size:.74rem;color:var(--muted);}
+.msg-item .mb{font-size:.84rem;color:#37415C;margin-top:5px;line-height:1.5;}
+@media (max-width:920px){ .msg-layout{grid-template-columns:1fr;} }
+.foot-btn{color:#D3DEF3;font-size:.84rem;font-weight:600;background:none;}
+.foot-btn:hover{color:var(--gold);}

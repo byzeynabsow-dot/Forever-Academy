@@ -53,6 +53,33 @@ window.TS_CONFIG = {
   profWhatsApp: '221782239495',
   whatsappChannel: 'https://whatsapp.com/channel/0029Vb82wT62ZjCkdgLhfn2Q',
 
+  /* =====================================================================
+     CODES DU PROFESSEUR
+     ---------------------------------------------------------------------
+     Les cours s'ouvrent d'eux-mêmes au fil de la progression : un module
+     se débloque quand le précédent est réussi à 70 pour cent. Ces codes
+     permettent au professeur d'ouvrir un niveau entier tout de suite.
+
+     On ne stocke que l'empreinte SHA-256 du code, jamais le code : un
+     eleve qui lit le code source ne peut pas le deviner. En revanche, un
+     code qui circule entre eleves fonctionne pour tous — c'est une cle de
+     classe, pas un mot de passe individuel.
+
+     Codes livres par defaut — A CHANGER :
+       A1 -> SHINE-A1   A2 -> SHINE-A2   B1 -> SHINE-B1
+       B2 -> SHINE-B2   C1 -> SHINE-C1
+
+     Pour fabriquer une nouvelle empreinte :
+       echo -n "MON-CODE" | sha256sum
+     ===================================================================== */
+  teacherCodes: {
+    A1: 'd804ebe84a8766f966cf71a08670b2ec71af38372441d34e9b4e5493c58c543e',
+    A2: '916d714e768fd5c8f06820e75dfa4e58e68dfd168704a172330a4837604cbf81',
+    B1: '61d853a18747e3e89e90ce7951e52f97cc181da718a5b4729730faca62059cae',
+    B2: '9935a469265dc87f5dd5f3107f2682c224aef1e8de5c822f8764fe7f3f4703dc',
+    C1: '61bd5d2df5513892fbbaded7b571c32f7a1c242a6c2e7aec5472c0d1879f3b4d'
+  },
+
   /* Réglages pédagogiques */
   passRate: 0.7,          // 70 % pour valider un examen
   secondsPerQuestion: 40, // temps par question en examen final
@@ -1135,6 +1162,65 @@ body.app-mode{background:transparent;}
 .shine-stage.has-3d .shine-3d{-webkit-mask-image:linear-gradient(180deg,#000 86%,transparent 100%);
              mask-image:linear-gradient(180deg,#000 86%,transparent 100%);}
 
+/* --- cours verrouillés + code du professeur --- */
+.module-card.locked{opacity:.62;}
+.module-card.locked .icon-badge{filter:grayscale(1);}
+.tag-lock{background:var(--line);color:var(--muted);font-weight:800;font-size:.72rem;padding:4px 10px;border-radius:999px;}
+.lock-why{margin-top:9px;font-size:.78rem;color:var(--muted);line-height:1.45;border-top:1px dashed var(--line);padding-top:8px;}
+.unlock-bar{
+  display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-m);
+  padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm);
+}
+.unlock-text{font-size:.88rem;color:var(--text);}
+.unlock-form{display:flex;gap:8px;}
+.unlock-form input{
+  border:1.6px solid var(--line);border-radius:10px;padding:9px 12px;
+  font-family:'Manrope',sans-serif;font-size:.88rem;width:190px;background:#fff;color:var(--text);
+}
+.unlock-form input:focus{outline:none;border-color:var(--navy-3);}
+.unlock-form button{
+  background:var(--navy);color:#fff;border-radius:10px;padding:9px 16px;font-weight:800;font-size:.84rem;
+}
+@media (max-width:520px){ .unlock-form{width:100%;} .unlock-form input{flex:1;width:auto;} }
+
+/* --- messagerie interne --- */
+.hidden-field{display:none;}
+.msg-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.75fr);gap:20px;align-items:start;}
+.msg-form{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);
+  padding:22px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:8px;
+}
+.msg-label{font-weight:800;font-size:.82rem;color:var(--navy);margin-top:8px;}
+.msg-form select,.msg-form textarea{
+  border:1.6px solid var(--line);border-radius:12px;padding:12px 14px;
+  font-family:'Manrope',sans-serif;font-size:.94rem;background:#fff;color:var(--text);width:100%;
+}
+.msg-form textarea{resize:vertical;line-height:1.6;}
+.msg-form select:focus,.msg-form textarea:focus{outline:none;border-color:var(--navy-3);}
+.msg-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:14px;}
+.msg-note{font-size:.84rem;}
+.msg-note.ok{color:var(--good);font-weight:700;}
+.msg-note.err{color:var(--bad);font-weight:700;}
+.msg-side{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);
+  padding:20px;box-shadow:var(--shadow-sm);
+}
+.msg-side h3{font-size:.95rem;color:var(--navy);margin-bottom:10px;}
+.msg-side ul{list-style:none;display:grid;gap:7px;}
+.msg-side li{font-size:.84rem;color:#37415C;display:flex;gap:8px;}
+.msg-side li b{color:var(--navy);}
+.msg-hint{font-size:.78rem;color:var(--muted);margin-top:12px;line-height:1.5;}
+.msg-item{
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#FAFBFF;
+}
+.msg-item .mo{font-weight:800;font-size:.82rem;color:var(--navy);}
+.msg-item .md{font-size:.74rem;color:var(--muted);}
+.msg-item .mb{font-size:.84rem;color:#37415C;margin-top:5px;line-height:1.5;}
+@media (max-width:920px){ .msg-layout{grid-template-columns:1fr;} }
+.foot-btn{color:#D3DEF3;font-size:.84rem;font-weight:600;background:none;}
+.foot-btn:hover{color:var(--gold);}
+
 </style>
 </head>
 <body>
@@ -1306,6 +1392,7 @@ body.app-mode{background:transparent;}
     <button class="nav-btn" data-target="view-shine">SHINE AI</button>
     <button class="nav-btn" data-target="view-exams">Examens</button>
     <button class="nav-btn" data-target="view-test">Progression</button>
+    <button class="nav-btn" data-target="view-messages">Messages</button>
   </nav>
   <div class="header-right">
     <button class="bell" id="bellBtn" aria-label="Notifications" title="Notifications">
@@ -1314,10 +1401,10 @@ body.app-mode{background:transparent;}
     </button>
     <span class="hello-chip" id="helloChip">Bonjour 👋</span>
     <span class="level-mini">Niveau <b id="levelMini">—</b></span>
-    <a class="wa-quick" href="https://wa.me/221782239495" target="_blank" rel="noopener">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2z"/></svg>
+    <button type="button" class="wa-quick" id="headerMsg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Professeur
-    </a>
+    </button>
     <button class="icon-btn" id="logoutBtn" title="Se déconnecter" aria-label="Se déconnecter">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
     </button>
@@ -1405,8 +1492,8 @@ body.app-mode{background:transparent;}
         <div><b>Talk &amp; Shine</b><span>Speak English. Build Your Future.</span></div>
       </div>
       <nav class="foot-links">
-        <a href="https://wa.me/221782239495" target="_blank" rel="noopener">Contact</a>
-        <a href="https://whatsapp.com/channel/0029Vb82wT62ZjCkdgLhfn2Q" target="_blank" rel="noopener">Chaîne WhatsApp</a>
+        <button type="button" class="foot-btn" id="footMsg">Écrire au professeur</button>
+        <a href="https://whatsapp.com/channel/0029Vb82wT62ZjCkdgLhfn2Q" target="_blank" rel="noopener">Chaîne WhatsApp ↗</a>
       </nav>
       <p class="foot-legal">Talk &amp; Shine © 2026. Tous droits réservés.</p>
     </div>
@@ -1437,6 +1524,7 @@ body.app-mode{background:transparent;}
       </div>
       <span class="level-chip">Ton niveau : <span class="accent-italic" id="levelChipValue">—</span></span>
     </div>
+    <div class="unlock-bar" id="unlockBar"></div>
     <div class="filter-row" id="filterRow">
       <button class="filter-btn active" data-lvl="all">Tous</button>
       <button class="filter-btn" data-lvl="A1">A1</button>
@@ -1446,6 +1534,57 @@ body.app-mode{background:transparent;}
       <button class="filter-btn" data-lvl="C1">C1</button>
     </div>
     <div class="module-grid scene" id="moduleGrid"></div>
+  </div>
+</section>
+
+<!-- ============================ MESSAGES ============================ -->
+<section id="view-messages" class="view">
+  <div class="shell">
+    <div class="section-head">
+      <div>
+        <h2>Écrire au professeur</h2>
+        <p>Tes messages partent directement d'ici. Pas besoin de quitter le site.</p>
+      </div>
+    </div>
+
+    <div class="msg-layout">
+      <form class="msg-form" id="msgForm" name="message-prof" method="POST"
+            data-netlify="true" netlify-honeypot="bot-field">
+        <input type="hidden" name="form-name" value="message-prof">
+        <p class="hidden-field"><label>Ne remplis pas ce champ : <input name="bot-field"></label></p>
+
+        <label class="msg-label" for="msgSubject">Objet</label>
+        <select id="msgSubject" name="objet" required>
+          <option value="Question sur un cours">Question sur un cours</option>
+          <option value="Correction d'une composition">Correction d'une composition</option>
+          <option value="Résultat d'examen">Résultat d'examen</option>
+          <option value="Demande de code d'accès">Demande de code d'accès</option>
+          <option value="Problème technique">Problème technique</option>
+          <option value="Autre">Autre</option>
+        </select>
+
+        <label class="msg-label" for="msgBody">Ton message</label>
+        <textarea id="msgBody" name="message" rows="8" required
+                  placeholder="Explique ta question au professeur…"></textarea>
+
+        <input type="hidden" name="eleve" id="msgWho">
+        <input type="hidden" name="niveau" id="msgLevel">
+        <input type="hidden" name="progression" id="msgProgress">
+
+        <div class="msg-actions">
+          <button type="submit" class="btn-gold-sm" id="msgSend">Envoyer au professeur</button>
+          <span class="msg-note" id="msgNote"></span>
+        </div>
+      </form>
+
+      <aside class="msg-side">
+        <h3>Ce que le professeur reçoit</h3>
+        <ul id="msgPreview"></ul>
+        <p class="msg-hint">Ton niveau et ta progression sont joints automatiquement : le professeur sait où tu en es sans que tu aies à l'expliquer.</p>
+        <h3 style="margin-top:18px;">Tes messages envoyés</h3>
+        <div id="msgHistory"></div>
+      </aside>
+    </div>
   </div>
 </section>
 
@@ -3859,7 +3998,7 @@ window.EXAMS.C1 = {
 window.TS = (function(){
   'use strict';
 
-  var CFG = window.TS_CONFIG;
+  var CFG = window.TS_CONFIG, cfg = CFG;
   var DB_KEY = 'fa_users_v2', SESS_KEY = 'fa_session_v2';
 
   function $(s, c){ return (c || document).querySelector(s); }
@@ -3956,6 +4095,7 @@ window.TS = (function(){
     return {
       name:'', email:'', level:'', guest:true, provider:'local',
       progress:{},   // moduleId -> {score,total,done}
+      granted:{},    // niveau -> true : accès ouvert par le professeur
       devoirs:{},    // devoirId -> {score,total,date}
       compos:{},     // compoId  -> {score,total,date,text,self}
       finals:{},     // niveau   -> {best,total,date}
@@ -3969,7 +4109,7 @@ window.TS = (function(){
     var u = db[state.email] || {};
     u.name = state.name; u.email = state.email; u.level = state.level;
     u.provider = state.provider;
-    u.progress = state.progress; u.devoirs = state.devoirs;
+    u.progress = state.progress; u.granted = state.granted; u.devoirs = state.devoirs;
     u.compos = state.compos; u.finals = state.finals; u.lastModule = state.lastModule;
     db[state.email] = u; saveDB(db);
   }
@@ -3987,6 +4127,7 @@ window.TS = (function(){
     state.level = u.level || '';
     state.provider = u.provider || 'local';
     state.progress = u.progress || {};
+    state.granted = u.granted || {};
     state.devoirs = u.devoirs || {};
     state.compos = u.compos || {};
     state.finals = u.finals || {};
@@ -4059,6 +4200,83 @@ window.TS = (function(){
   function examOf(lvl){ return window.EXAMS[lvl]; }
 
   function moduleProgress(id){ return state.progress[id] || null; }
+
+  /* ---------- accès aux cours ----------
+     Un module s'ouvre quand :
+       • c'est le premier de son niveau, OU
+       • le module précédent est terminé avec au moins 70 % de réussite, OU
+       • le professeur a ouvert le niveau (code d'accès).
+     Le reste du site — SHINE, examens, test de niveau, messages — ne
+     dépend jamais de cette règle. */
+  var PASS = 0.7;
+
+  function moduleDone(id){
+    var p = state.progress[id];
+    if(!p || !p.done) return false;
+    return (p.score || 0) >= Math.ceil((p.total || 1) * PASS);
+  }
+
+  function levelGranted(lvl){ return !!state.granted[lvl]; }
+
+  function moduleUnlocked(id){
+    var mods = null, lvl = null, idx = -1;
+    var lv = levels();
+    for(var i = 0; i < lv.length && idx < 0; i++){
+      var list = modulesOf(lv[i]);
+      for(var j = 0; j < list.length; j++){
+        if(list[j].id === id){ mods = list; lvl = lv[i]; idx = j; break; }
+      }
+    }
+    if(idx < 0) return true;
+    if(levelGranted(lvl)) return true;
+    if(idx === 0) return true;
+    return moduleDone(mods[idx - 1].id);
+  }
+
+  /* Pourquoi un module est fermé, en clair pour l'apprenant. */
+  function lockReason(id){
+    var lv = levels();
+    for(var i = 0; i < lv.length; i++){
+      var list = modulesOf(lv[i]);
+      for(var j = 0; j < list.length; j++){
+        if(list[j].id === id){
+          if(j === 0) return '';
+          var prev = list[j - 1];
+          var p = state.progress[prev.id];
+          var need = Math.ceil((prev.exercises.length) * PASS);
+          if(!p) return 'Termine « ' + prev.title +' » (au moins ' + need + '/' + prev.exercises.length + ') pour ouvrir ce module.';
+          return 'Il te faut ' + need + '/' + prev.exercises.length + ' à « ' + prev.title + ' » — tu en es à ' + (p.score || 0) + '.';
+        }
+      }
+    }
+    return '';
+  }
+
+  /* Code du professeur : on ne stocke que l'empreinte du code, jamais le
+     code lui-même. Un élève curieux qui lit le code source ne peut pas le
+     déduire — mais s'il obtient le code d'un camarade, il entre : c'est
+     une clé de classe, pas une authentification individuelle. */
+  function grantWithCode(code){
+    var codes = (cfg.teacherCodes || {});
+    var want = String(code || '').trim().toUpperCase();
+    if(!want) return Promise.resolve(null);
+    if(!hasSubtle()){
+      // Sans Web Crypto on compare en clair, faute de mieux.
+      var lv = Object.keys(codes);
+      for(var i = 0; i < lv.length; i++){
+        if(codes[lv[i]] === want){ state.granted[lv[i]] = true; persist(); return Promise.resolve(lv[i]); }
+      }
+      return Promise.resolve(null);
+    }
+    return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(want)).then(function(buf){
+      var hex = toHex(buf);
+      var lv = Object.keys(codes);
+      for(var i = 0; i < lv.length; i++){
+        if(codes[lv[i]] === hex){ state.granted[lv[i]] = true; persist(); return lv[i]; }
+      }
+      return null;
+    });
+  }
   function levelStats(lvl){
     var mods = modulesOf(lvl), done = 0, exos = 0, good = 0;
     mods.forEach(function(m){
@@ -4122,6 +4340,8 @@ window.TS = (function(){
     toast: toast, normalize: normalize, answerMatches: answerMatches, countWords: countWords,
     levels: levels, modulesOf: modulesOf, allModules: allModules, moduleById: moduleById,
     examOf: examOf, moduleProgress: moduleProgress, levelStats: levelStats, globalStats: globalStats,
+    moduleUnlocked: moduleUnlocked, moduleDone: moduleDone, lockReason: lockReason,
+    levelGranted: levelGranted, grantWithCode: grantWithCode,
     totalExercises: totalExercises, speak: speak, waLink: waLink
   };
 })();
@@ -5504,6 +5724,7 @@ window.Shine = (function () {
           '<div class="shine-actions">' +
             '<button type="button" class="shine-mic" id="shineMic">Parler avec SHINE</button>' +
             '<button type="button" class="shine-mute" id="shineMute" style="display:none;">Couper le micro</button>' +
+            '<button type="button" class="shine-mute" id="shineDiag" title="Vérifier la configuration">Diagnostic</button>' +
           '</div>' +
 
           '<form class="shine-compose" id="shineCompose">' +
@@ -5568,6 +5789,7 @@ window.Shine = (function () {
         }
         return;
       }
+      if (ev.target.closest && ev.target.closest('#shineDiag')) { diagnose(); return; }
       var mute = ev.target.closest && ev.target.closest('#shineMute');
       if (mute) {
         var on = ShineLive.setMic(mute.dataset.off === '1');
@@ -5627,6 +5849,72 @@ window.Shine = (function () {
     if (el) { el.textContent = msg; el.style.display = 'block'; }
   }
 
+  /* Rapport de diagnostic : dit exactement ce qui manque, sans jamais
+     afficher la clé (le serveur ne la renvoie pas). */
+  async function diagnose() {
+    var sup = ShineLive.support();
+    var lines = [];
+    function ok(v){ return v ? '✅' : '❌'; }
+
+    lines.push('<b>Navigateur</b>');
+    lines.push(ok(sup.secure) + ' page sécurisée (https) — indispensable au micro');
+    lines.push(ok(sup.mic) + ' micro accessible');
+    lines.push(ok(sup.audio) + ' audio');
+    lines.push(ok(sup.worklet) + ' capture audio (AudioWorklet)');
+    lines.push(ok(sup.websocket) + ' WebSocket');
+    lines.push(ok(window.ShineAvatar && ShineAvatar.supported()) + ' 3D (WebGL)');
+    lines.push('');
+    lines.push('<b>Mode</b> : ' + (ShineLive.mode() === 'direct' ? 'clé dans la page ⚠️' : 'jeton serveur ✅'));
+    lines.push('');
+    lines.push('<b>Serveur</b>');
+
+    var box = $('#shineNotice');
+    box.className = 'shine-notice show';
+    box.innerHTML = lines.join('<br>') + '<br>⏳ test de /api/token…';
+
+    var res, txt, info = null;
+    try {
+      res = await fetch((TS.cfg.tokenEndpoint || '/api/token'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ level: state.level || 'A2', name: state.name || '', topic: 'diagnostic' })
+      });
+      txt = await res.text();
+      try { info = JSON.parse(txt); } catch (e) {}
+    } catch (e) {
+      lines.push('❌ /api/token injoignable — la fonction serveur n\'est pas déployée.');
+      lines.push('<i>' + esc(String(e)) + '</i>');
+      box.className = 'shine-notice show err';
+      box.innerHTML = lines.join('<br>');
+      return;
+    }
+
+    lines.push((res.ok ? '✅' : '❌') + ' /api/token répond : <b>HTTP ' + res.status + '</b>');
+    if (info) {
+      if (info.error) lines.push('code : <b>' + esc(info.error) + '</b>');
+      if (info.message) lines.push('message : <i>' + esc(info.message) + '</i>');
+      if (info.apiVersion) lines.push('version d\'API essayée : <b>' + esc(info.apiVersion) + '</b>');
+      if (info.model) lines.push('modèle : <b>' + esc(info.model) + '</b>');
+      if (info.token) lines.push('✅ jeton reçu — la clé fonctionne.');
+    } else if (txt) {
+      lines.push('<i>' + esc(txt.slice(0, 300)) + '</i>');
+    }
+
+    lines.push('');
+    if (info && info.error === 'not_configured') {
+      lines.push('👉 La variable <b>GEMINI_API_KEY</b> manque sur le déploiement, ou le site n\'a pas été redéployé après l\'avoir ajoutée.');
+    } else if (info && info.error === 'origin_refused') {
+      lines.push('👉 <b>ALLOWED_ORIGINS</b> ne correspond pas à l\'adresse de ce site : ' + esc(location.origin));
+    } else if (info && info.error === 'token_refused') {
+      lines.push('👉 Google refuse la clé ou la version d\'API. Essaie d\'ajouter la variable <b>GEMINI_API_VERSION</b> avec la valeur <b>v1beta</b>, puis redéploie.');
+    } else if (res.status === 404) {
+      lines.push('👉 La fonction n\'est pas déployée : le dossier <b>netlify/functions</b> doit être présent dans ce qui a été envoyé.');
+    }
+
+    box.className = 'shine-notice show ' + (res.ok ? 'warn' : 'err');
+    box.innerHTML = lines.join('<br>');
+  }
+
   function leave() {
     ShineLive.stop();
     if (window.ShineAvatar) ShineAvatar.stop();
@@ -5670,6 +5958,7 @@ window.FA = (function(){
       if(t === 'view-home') renderHome();
       if(t === 'view-courses') renderModules();
       if(t === 'view-shine') Shine.render('');
+      if(t === 'view-messages') renderMessages();
       if(t === 'view-exams') renderRooms();
       if(t === 'view-test') startPlacement();
       showView(t);
@@ -5905,13 +6194,14 @@ window.FA = (function(){
         '<p class="result-quote">' + res.desc + '</p>' +
         '<p class="result-sub">Score : ' + pCorrect + ' / ' + Q.length + '. Rappel : <b>tous</b> les niveaux, cours et salles d\'examen restent ouverts, celui-ci est simplement ton meilleur point de départ.</p>' +
         '<div class="result-actions">' +
-          '<a class="btn-whatsapp" target="_blank" rel="noopener" href="' + TS.waLink(msg) + '">' +
-            '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2z"/></svg>' +
-            'Envoyer mon résultat au professeur</a>' +
+          '<button type="button" class="btn-whatsapp" data-msg="1">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+            'Envoyer mon résultat au professeur</button>' +
           '<button type="button" class="btn-outline-navy" id="toCourses">Voir mes cours ' + res.code + '</button>' +
           '<button type="button" class="btn-outline-navy" id="toRooms">Entrer en salle d\'examen</button>' +
         '</div>' +
       '</div>';
+    bindMsgButton(card, 'Résultat d\'examen', msg);
     $('#toCourses').addEventListener('click', function(){ moduleFilter = res.code; renderModules(); showView('view-courses'); });
     $('#toRooms').addEventListener('click', function(){ currentRoom = res.code; renderRooms(); showView('view-exams'); });
     spawnBurst();
@@ -6100,6 +6390,98 @@ window.FA = (function(){
   });
 
   /* =======================================================
+     MESSAGES — envoi au professeur sans quitter le site
+     -------------------------------------------------------
+     La livraison passe par les formulaires Netlify : le message arrive
+     dans le tableau de bord du professeur et par email, sans base de
+     données. Une copie locale est gardée pour que l'élève relise ce
+     qu'il a envoyé.
+     ======================================================= */
+  /* Ouvre la messagerie avec un message déjà rédigé : l'élève reste
+     sur le site au lieu d'être envoyé vers WhatsApp. */
+  function openMessage(objet, texte){
+    renderMessages();
+    var sel = $('#msgSubject');
+    for(var i = 0; i < sel.options.length; i++){
+      if(sel.options[i].value === objet){ sel.selectedIndex = i; break; }
+    }
+    $('#msgBody').value = texte || '';
+    showView('view-messages');
+    setTimeout(function(){ $('#msgBody').focus(); }, 300);
+  }
+
+  function bindMsgButton(scope, objet, texte){
+    var btn = scope && scope.querySelector('[data-msg="1"]');
+    if(btn) btn.addEventListener('click', function(){ openMessage(objet, texte); });
+  }
+
+  function renderMessages(){
+    greet();
+    var g = TS.globalStats();
+    $('#msgWho').value = (state.name || 'Invité') + (state.email ? ' <' + state.email + '>' : '');
+    $('#msgLevel').value = state.level || 'non testé';
+    $('#msgProgress').value = g.done + '/' + g.modules + ' modules · ' + g.good + ' exercices réussis · ' +
+                              g.devoirs + ' devoirs · ' + g.compos + ' compositions · ' + g.finals + ' examens';
+
+    $('#msgPreview').innerHTML = [
+      ['Élève', state.name || 'Invité'],
+      ['Niveau', state.level || 'non testé'],
+      ['Modules terminés', g.done + ' / ' + g.modules],
+      ['Devoirs rendus', String(g.devoirs)],
+      ['Compositions', String(g.compos)]
+    ].map(function(x){ return '<li><b>' + x[0] + ' :</b> ' + esc(x[1]) + '</li>'; }).join('');
+
+    renderMsgHistory();
+  }
+
+  function renderMsgHistory(){
+    var box = $('#msgHistory');
+    if(!box) return;
+    var list = [];
+    try { list = JSON.parse(localStorage.getItem('fa_messages') || '[]'); } catch(e){}
+    if(!list.length){ box.innerHTML = '<p class="msg-hint">Aucun message envoyé pour l\'instant.</p>'; return; }
+    box.innerHTML = list.slice(-6).reverse().map(function(m){
+      return '<div class="msg-item"><div class="mo">' + esc(m.objet) + '</div>' +
+             '<div class="md">' + new Date(m.date).toLocaleString('fr-FR') + '</div>' +
+             '<div class="mb">' + esc(m.message.slice(0, 160)) + (m.message.length > 160 ? '…' : '') + '</div></div>';
+    }).join('');
+  }
+
+  (function wireMessages(){
+    var form = $('#msgForm');
+    if(!form) return;
+    form.addEventListener('submit', function(ev){
+      ev.preventDefault();
+      var note = $('#msgNote'), btn = $('#msgSend');
+      var objet = $('#msgSubject').value, body = $('#msgBody').value.trim();
+      if(body.length < 5){ note.className = 'msg-note err'; note.textContent = 'Écris ton message avant d\'envoyer.'; return; }
+
+      btn.disabled = true;
+      note.className = 'msg-note'; note.textContent = 'Envoi…';
+
+      var data = new URLSearchParams(new FormData(form)).toString();
+      fetch('/', { method:'POST', headers:{ 'content-type':'application/x-www-form-urlencoded' }, body: data })
+        .then(function(res){
+          if(!res.ok) throw new Error('HTTP ' + res.status);
+          // copie locale, pour que l'élève relise ce qu'il a envoyé
+          var list = [];
+          try { list = JSON.parse(localStorage.getItem('fa_messages') || '[]'); } catch(e){}
+          list.push({ objet: objet, message: body, date: Date.now() });
+          try { localStorage.setItem('fa_messages', JSON.stringify(list.slice(-30))); } catch(e){}
+          $('#msgBody').value = '';
+          note.className = 'msg-note ok';
+          note.textContent = 'Message envoyé au professeur.';
+          renderMsgHistory();
+        })
+        .catch(function(e){
+          note.className = 'msg-note err';
+          note.textContent = "L'envoi a échoué. Vérifie ta connexion et réessaie.";
+        })
+        .finally(function(){ btn.disabled = false; });
+    });
+  })();
+
+  /* =======================================================
      COURS
      ======================================================= */
   var ICONS = {
@@ -6126,13 +6508,45 @@ window.FA = (function(){
     greet();
     $$('#filterRow .filter-btn').forEach(function(x){ x.classList.toggle('active', x.dataset.lvl === moduleFilter); });
     var list = TS.allModules().filter(function(m){ return moduleFilter === 'all' || m.level === moduleFilter; });
-    $('#coursesSub').textContent = list.length + ' modules affichés — leçon complète, exemples audio et exercices corrigés dans chacun.';
+    var openCount = list.filter(function(m){ return TS.moduleUnlocked(m.id); }).length;
+    $('#coursesSub').textContent = openCount + ' module' + (openCount > 1 ? 's' : '') + ' ouvert' + (openCount > 1 ? 's' : '') +
+      ' sur ' + list.length + ' — chaque module se débloque quand le précédent est réussi à 70 %.';
+
+    var bar = $('#unlockBar');
+    if(bar){
+      var granted = LEVELS.filter(function(l){ return TS.levelGranted(l); });
+      bar.innerHTML =
+        '<div class="unlock-text">' +
+          (granted.length
+            ? '🔓 Niveau' + (granted.length > 1 ? 'x' : '') + ' ouvert' + (granted.length > 1 ? 's' : '') + ' par ton professeur : <b>' + granted.join(', ') + '</b>'
+            : 'Ton professeur peut ouvrir un niveau entier avec un code.') +
+        '</div>' +
+        '<form class="unlock-form" id="unlockForm">' +
+          '<input type="text" id="unlockCode" placeholder="Code du professeur" autocomplete="off" spellcheck="false">' +
+          '<button type="submit">Valider</button>' +
+        '</form>';
+      $('#unlockForm').addEventListener('submit', function(ev){
+        ev.preventDefault();
+        var code = $('#unlockCode').value;
+        TS.grantWithCode(code).then(function(lvl){
+          if(lvl){
+            TS.toast('Niveau ' + lvl + ' ouvert par ton professeur.', 'ok');
+            $('#unlockCode').value = '';
+            renderModules();
+          } else {
+            TS.toast('Code inconnu.', 'err');
+          }
+        });
+      });
+    }
     var grid = $('#moduleGrid');
     grid.innerHTML = list.map(function(m, idx){
       var p = TS.moduleProgress(m.id);
       var pct = p ? Math.round((p.score || 0) / (p.total || m.exercises.length) * 100) : 0;
       var match = m.level === state.level;
-      return '<button type="button" class="module-card tilt' + (match ? ' match' : '') + '" data-mod="' + m.id + '">' +
+      var open = TS.moduleUnlocked(m.id);
+      return '<button type="button" class="module-card tilt' + (match ? ' match' : '') + (open ? '' : ' locked') +
+        '" data-mod="' + m.id + '"' + (open ? '' : ' data-locked="1"') + '>' +
         '<div class="module-top">' +
           '<div class="icon-badge' + (idx % 3 === 0 ? ' gold' : '') + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="' + (idx % 3 === 0 ? '#0E1B33' : '#fff') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[m.icon] || ICONS.book) + '</svg>' +
@@ -6143,12 +6557,21 @@ window.FA = (function(){
         '<p class="module-desc">' + m.goal.replace(/<[^>]+>/g, '') + '</p>' +
         '<div class="module-progress-track"><div class="module-progress-fill" style="width:' + pct + '%"></div></div>' +
         '<div class="module-status"><span>' + (p ? p.score + '/' + p.total + ' exercices réussis' : m.exercises.length + ' exercices') + '</span>' +
-          (p && p.done ? '<span class="tag-done">Terminé</span>' : '<span class="tag-live">Leçon disponible</span>') + '</div>' +
+          (!open ? '<span class="tag-lock">🔒 Verrouillé</span>'
+                 : p && p.done ? '<span class="tag-done">Terminé</span>'
+                 : '<span class="tag-live">Leçon disponible</span>') + '</div>' +
+        (open ? '' : '<p class="lock-why">' + esc(TS.lockReason(m.id)) + '</p>') +
       '</button>';
     }).join('');
     $$('.module-card', grid).forEach(function(c){
       attachTilt(c, 7);
-      c.addEventListener('click', function(){ openLesson(c.dataset.mod); });
+      c.addEventListener('click', function(){
+        if(c.dataset.locked === '1'){
+          TS.toast(TS.lockReason(c.dataset.mod) || 'Ce module se débloquera avec ta progression.');
+          return;
+        }
+        openLesson(c.dataset.mod);
+      });
     });
   }
 
@@ -6183,6 +6606,11 @@ window.FA = (function(){
   function openLesson(id){
     var m = TS.moduleById(id);
     if(!m){ TS.toast('Module introuvable.', 'err'); return; }
+    if(!TS.moduleUnlocked(id)){
+      TS.toast(TS.lockReason(id) || "Ce module n'est pas encore ouvert.");
+      renderModules(); showView('view-courses');
+      return;
+    }
     state.lastModule = id; TS.persist();
 
     var host = $('#lessonShell');
@@ -6370,10 +6798,11 @@ window.FA = (function(){
       '<div class="gl">' + (passed ? 'Devoir validé — ' + pct + ' %. ' + (pct === 100 ? 'Sans faute, bravo.' : 'Relis les explications des questions ratées.')
                                    : 'Devoir non validé (' + pct + ' %). Refais-le après avoir relu la leçon.') + '</div></div>' +
       '<div class="paper-actions">' +
-        '<a class="btn-whatsapp" target="_blank" rel="noopener" href="' + TS.waLink(msg) + '">Envoyer au professeur</a>' +
+        '<button type="button" class="btn-whatsapp" data-msg="1">Envoyer au professeur</button>' +
         '<button type="button" class="btn-outline-navy" id="redoDevoir">Refaire ce devoir</button>' +
         '<button type="button" class="btn-outline-navy" id="backRoom2">Retour à la salle</button>' +
       '</div></div>';
+    bindMsgButton(box, 'Question sur un cours', msg);
     $('#redoDevoir').addEventListener('click', function(){ openDevoir(lvl, d.id); });
     $('#backRoom2').addEventListener('click', function(){ currentRoom = lvl; renderRooms(); showView('view-exams'); });
     box.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block:'center' });
@@ -6500,10 +6929,11 @@ window.FA = (function(){
       '<div class="gl">Questions : ' + good + '/' + autoTotal + ' · Expression écrite : ' + words + ' mots, ' + crits + '/' + critTotal + ' critères cochés</div></div>' +
       '<p style="font-size:.88rem;color:var(--muted);margin-bottom:14px;">La partie « expression écrite » ne peut pas être notée par la machine : envoie ton texte au professeur pour une vraie correction. Ta copie est enregistrée sur cet appareil.</p>' +
       '<div class="paper-actions">' +
-        '<a class="btn-whatsapp" target="_blank" rel="noopener" href="' + TS.waLink(msg) + '">Envoyer ma copie au professeur</a>' +
+        '<button type="button" class="btn-whatsapp" data-msg="1">Envoyer ma copie au professeur</button>' +
         '<button type="button" class="btn-outline-navy" id="redoCompo">Refaire la composition</button>' +
         '<button type="button" class="btn-outline-navy" id="backRoom4">Retour à la salle</button>' +
       '</div>';
+    bindMsgButton($('#compoResult'), 'Correction d\'une composition', msg);
     $('#redoCompo').addEventListener('click', function(){ openCompo(lvl, c.id); });
     $('#backRoom4').addEventListener('click', function(){ currentRoom = lvl; renderRooms(); showView('view-exams'); });
     $('#compoResult').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block:'start' });
@@ -6595,7 +7025,7 @@ window.FA = (function(){
           (passed ? (next ? 'Continue avec la salle ' + next + ' quand tu veux.' : 'Tu as terminé le parcours complet. Bravo, champion.')
                   : 'Revois les corrections ci-dessous et reviens quand tu veux : la salle reste ouverte.') + '</p>' +
         '<div class="result-actions">' +
-          '<a class="btn-whatsapp" target="_blank" rel="noopener" href="' + TS.waLink(msg) + '">Envoyer mon résultat au professeur</a>' +
+          '<button type="button" class="btn-whatsapp" data-msg="1">Envoyer mon résultat au professeur</button>' +
           '<button type="button" class="btn-outline-navy" id="retryExam">Repasser cet examen</button>' +
           '<button type="button" class="btn-outline-navy" id="backRooms">Retour aux salles</button>' +
         '</div>' +
@@ -6607,6 +7037,7 @@ window.FA = (function(){
         }).join('') + '</div>' +
       '</div>';
     $('#examProgress').style.width = '100%';
+    bindMsgButton(card, 'Résultat d\'examen', msg);
     $('#retryExam').addEventListener('click', function(){ startExam(lvl); });
     $('#backRooms').addEventListener('click', function(){ currentRoom = lvl; renderRooms(); showView('view-exams'); });
     if(passed) TS.toast('Salle ' + lvl + ' validée : ' + exam.score + '/' + total + ' !', 'ok');
@@ -6618,6 +7049,11 @@ window.FA = (function(){
   /* =======================================================
      SESSION
      ======================================================= */
+  $('#footMsg').addEventListener('click', function(){ openMessage('Question sur un cours', ''); });
+  $('#headerMsg').addEventListener('click', function(){
+    openMessage('Question sur un cours', '');
+  });
+
   $('#logoutBtn').addEventListener('click', function(){
     TS.persist(); TS.clearSession(); stopExam();
     TS.resetState();
