@@ -218,6 +218,7 @@ window.Shine = (function () {
           '<div class="shine-actions">' +
             '<button type="button" class="shine-mic" id="shineMic">Parler avec SHINE</button>' +
             '<button type="button" class="shine-mute" id="shineMute" style="display:none;">Couper le micro</button>' +
+            '<button type="button" class="shine-mute" id="shineDiag" title="Vérifier la configuration">Diagnostic</button>' +
           '</div>' +
 
           '<form class="shine-compose" id="shineCompose">' +
@@ -282,6 +283,7 @@ window.Shine = (function () {
         }
         return;
       }
+      if (ev.target.closest && ev.target.closest('#shineDiag')) { diagnose(); return; }
       var mute = ev.target.closest && ev.target.closest('#shineMute');
       if (mute) {
         var on = ShineLive.setMic(mute.dataset.off === '1');
@@ -339,6 +341,72 @@ window.Shine = (function () {
   function note3D(msg) {
     var el = $('#shine3dNote');
     if (el) { el.textContent = msg; el.style.display = 'block'; }
+  }
+
+  /* Rapport de diagnostic : dit exactement ce qui manque, sans jamais
+     afficher la clé (le serveur ne la renvoie pas). */
+  async function diagnose() {
+    var sup = ShineLive.support();
+    var lines = [];
+    function ok(v){ return v ? '✅' : '❌'; }
+
+    lines.push('<b>Navigateur</b>');
+    lines.push(ok(sup.secure) + ' page sécurisée (https) — indispensable au micro');
+    lines.push(ok(sup.mic) + ' micro accessible');
+    lines.push(ok(sup.audio) + ' audio');
+    lines.push(ok(sup.worklet) + ' capture audio (AudioWorklet)');
+    lines.push(ok(sup.websocket) + ' WebSocket');
+    lines.push(ok(window.ShineAvatar && ShineAvatar.supported()) + ' 3D (WebGL)');
+    lines.push('');
+    lines.push('<b>Mode</b> : ' + (ShineLive.mode() === 'direct' ? 'clé dans la page ⚠️' : 'jeton serveur ✅'));
+    lines.push('');
+    lines.push('<b>Serveur</b>');
+
+    var box = $('#shineNotice');
+    box.className = 'shine-notice show';
+    box.innerHTML = lines.join('<br>') + '<br>⏳ test de /api/token…';
+
+    var res, txt, info = null;
+    try {
+      res = await fetch((TS.cfg.tokenEndpoint || '/api/token'), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ level: state.level || 'A2', name: state.name || '', topic: 'diagnostic' })
+      });
+      txt = await res.text();
+      try { info = JSON.parse(txt); } catch (e) {}
+    } catch (e) {
+      lines.push('❌ /api/token injoignable — la fonction serveur n\'est pas déployée.');
+      lines.push('<i>' + esc(String(e)) + '</i>');
+      box.className = 'shine-notice show err';
+      box.innerHTML = lines.join('<br>');
+      return;
+    }
+
+    lines.push((res.ok ? '✅' : '❌') + ' /api/token répond : <b>HTTP ' + res.status + '</b>');
+    if (info) {
+      if (info.error) lines.push('code : <b>' + esc(info.error) + '</b>');
+      if (info.message) lines.push('message : <i>' + esc(info.message) + '</i>');
+      if (info.apiVersion) lines.push('version d\'API essayée : <b>' + esc(info.apiVersion) + '</b>');
+      if (info.model) lines.push('modèle : <b>' + esc(info.model) + '</b>');
+      if (info.token) lines.push('✅ jeton reçu — la clé fonctionne.');
+    } else if (txt) {
+      lines.push('<i>' + esc(txt.slice(0, 300)) + '</i>');
+    }
+
+    lines.push('');
+    if (info && info.error === 'not_configured') {
+      lines.push('👉 La variable <b>GEMINI_API_KEY</b> manque sur le déploiement, ou le site n\'a pas été redéployé après l\'avoir ajoutée.');
+    } else if (info && info.error === 'origin_refused') {
+      lines.push('👉 <b>ALLOWED_ORIGINS</b> ne correspond pas à l\'adresse de ce site : ' + esc(location.origin));
+    } else if (info && info.error === 'token_refused') {
+      lines.push('👉 Google refuse la clé ou la version d\'API. Essaie d\'ajouter la variable <b>GEMINI_API_VERSION</b> avec la valeur <b>v1beta</b>, puis redéploie.');
+    } else if (res.status === 404) {
+      lines.push('👉 La fonction n\'est pas déployée : le dossier <b>netlify/functions</b> doit être présent dans ce qui a été envoyé.');
+    }
+
+    box.className = 'shine-notice show ' + (res.ok ? 'warn' : 'err');
+    box.innerHTML = lines.join('<br>');
   }
 
   function leave() {

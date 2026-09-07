@@ -22,9 +22,12 @@
     # Politique de sécurité du contenu : liste blanche stricte.
     # - script-src : nos fichiers, le SDK Gemini, et les connexions Google/Apple
     # - connect-src : Gemini Live en WebSocket, rien d'autre
-    # - worker-src blob: : requis par l'AudioWorklet qui capture le micro
+    # - blob: est indispensable à trois endroits :
+    #     script-src  → le module AudioWorklet qui capture le micro
+    #     img-src     → les textures du modèle 3D, décodées en blob par GLTFLoader
+    #     connect-src → la lecture de ces mêmes textures via fetch
     # - frame-ancestors none : le site ne peut pas être encadré ailleurs
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://accounts.google.com https://appleid.cdn-apple.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://secure.gravatar.com; media-src 'self' data: blob:; connect-src 'self' https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com https://cdn.jsdelivr.net https://accounts.google.com https://appleid.apple.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src https://accounts.google.com https://appleid.apple.com; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' blob: https://cdn.jsdelivr.net https://accounts.google.com https://appleid.cdn-apple.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://secure.gravatar.com; media-src 'self' data: blob:; connect-src 'self' blob: data: https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com https://cdn.jsdelivr.net https://accounts.google.com https://appleid.apple.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src https://accounts.google.com https://appleid.apple.com; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'"
 
 [[headers]]
   for = "/assets/video/*"

@@ -31,6 +31,7 @@ window.FA = (function(){
       if(t === 'view-home') renderHome();
       if(t === 'view-courses') renderModules();
       if(t === 'view-shine') Shine.render('');
+      if(t === 'view-messages') renderMessages();
       if(t === 'view-exams') renderRooms();
       if(t === 'view-test') startPlacement();
       showView(t);
@@ -266,13 +267,14 @@ window.FA = (function(){
         '<p class="result-quote">' + res.desc + '</p>' +
         '<p class="result-sub">Score : ' + pCorrect + ' / ' + Q.length + '. Rappel : <b>tous</b> les niveaux, cours et salles d\'examen restent ouverts, celui-ci est simplement ton meilleur point de départ.</p>' +
         '<div class="result-actions">' +
-          '<a class="btn-whatsapp" target="_blank" rel="noopener" href="' + TS.waLink(msg) + '">' +
-            '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.1-1.3A10 10 0 1 0 12 2z"/></svg>' +
-            'Envoyer mon résultat au professeur</a>' +
+          '<button type="button" class="btn-whatsapp" data-msg="1">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+            'Envoyer mon résultat au professeur</button>' +
           '<button type="button" class="btn-outline-navy" id="toCourses">Voir mes cours ' + res.code + '</button>' +
           '<button type="button" class="btn-outline-navy" id="toRooms">Entrer en salle d\'examen</button>' +
         '</div>' +
       '</div>';
+    bindMsgButton(card, 'Résultat d\'examen', msg);
     $('#toCourses').addEventListener('click', function(){ moduleFilter = res.code; renderModules(); showView('view-courses'); });
     $('#toRooms').addEventListener('click', function(){ currentRoom = res.code; renderRooms(); showView('view-exams'); });
     spawnBurst();
@@ -461,6 +463,98 @@ window.FA = (function(){
   });
 
   /* =======================================================
+     MESSAGES — envoi au professeur sans quitter le site
+     -------------------------------------------------------
+     La livraison passe par les formulaires Netlify : le message arrive
+     dans le tableau de bord du professeur et par email, sans base de
+     données. Une copie locale est gardée pour que l'élève relise ce
+     qu'il a envoyé.
+     ======================================================= */
+  /* Ouvre la messagerie avec un message déjà rédigé : l'élève reste
+     sur le site au lieu d'être envoyé vers WhatsApp. */
+  function openMessage(objet, texte){
+    renderMessages();
+    var sel = $('#msgSubject');
+    for(var i = 0; i < sel.options.length; i++){
+      if(sel.options[i].value === objet){ sel.selectedIndex = i; break; }
+    }
+    $('#msgBody').value = texte || '';
+    showView('view-messages');
+    setTimeout(function(){ $('#msgBody').focus(); }, 300);
+  }
+
+  function bindMsgButton(scope, objet, texte){
+    var btn = scope && scope.querySelector('[data-msg="1"]');
+    if(btn) btn.addEventListener('click', function(){ openMessage(objet, texte); });
+  }
+
+  function renderMessages(){
+    greet();
+    var g = TS.globalStats();
+    $('#msgWho').value = (state.name || 'Invité') + (state.email ? ' <' + state.email + '>' : '');
+    $('#msgLevel').value = state.level || 'non testé';
+    $('#msgProgress').value = g.done + '/' + g.modules + ' modules · ' + g.good + ' exercices réussis · ' +
+                              g.devoirs + ' devoirs · ' + g.compos + ' compositions · ' + g.finals + ' examens';
+
+    $('#msgPreview').innerHTML = [
+      ['Élève', state.name || 'Invité'],
+      ['Niveau', state.level || 'non testé'],
+      ['Modules terminés', g.done + ' / ' + g.modules],
+      ['Devoirs rendus', String(g.devoirs)],
+      ['Compositions', String(g.compos)]
+    ].map(function(x){ return '<li><b>' + x[0] + ' :</b> ' + esc(x[1]) + '</li>'; }).join('');
+
+    renderMsgHistory();
+  }
+
+  function renderMsgHistory(){
+    var box = $('#msgHistory');
+    if(!box) return;
+    var list = [];
+    try { list = JSON.parse(localStorage.getItem('fa_messages') || '[]'); } catch(e){}
+    if(!list.length){ box.innerHTML = '<p class="msg-hint">Aucun message envoyé pour l\'instant.</p>'; return; }
+    box.innerHTML = list.slice(-6).reverse().map(function(m){
+      return '<div class="msg-item"><div class="mo">' + esc(m.objet) + '</div>' +
+             '<div class="md">' + new Date(m.date).toLocaleString('fr-FR') + '</div>' +
+             '<div class="mb">' + esc(m.message.slice(0, 160)) + (m.message.length > 160 ? '…' : '') + '</div></div>';
+    }).join('');
+  }
+
+  (function wireMessages(){
+    var form = $('#msgForm');
+    if(!form) return;
+    form.addEventListener('submit', function(ev){
+      ev.preventDefault();
+      var note = $('#msgNote'), btn = $('#msgSend');
+      var objet = $('#msgSubject').value, body = $('#msgBody').value.trim();
+      if(body.length < 5){ note.className = 'msg-note err'; note.textContent = 'Écris ton message avant d\'envoyer.'; return; }
+
+      btn.disabled = true;
+      note.className = 'msg-note'; note.textContent = 'Envoi…';
+
+      var data = new URLSearchParams(new FormData(form)).toString();
+      fetch('/', { method:'POST', headers:{ 'content-type':'application/x-www-form-urlencoded' }, body: data })
+        .then(function(res){
+          if(!res.ok) throw new Error('HTTP ' + res.status);
+          // copie locale, pour que l'élève relise ce qu'il a envoyé
+          var list = [];
+          try { list = JSON.parse(localStorage.getItem('fa_messages') || '[]'); } catch(e){}
+          list.push({ objet: objet, message: body, date: Date.now() });
+          try { localStorage.setItem('fa_messages', JSON.stringify(list.slice(-30))); } catch(e){}
+          $('#msgBody').value = '';
+          note.className = 'msg-note ok';
+          note.textContent = 'Message envoyé au professeur.';
+          renderMsgHistory();
+        })
+        .catch(function(e){
+          note.className = 'msg-note err';
+          note.textContent = "L'envoi a échoué. Vérifie ta connexion et réessaie.";
+        })
+        .finally(function(){ btn.disabled = false; });
+    });
+  })();
+
+  /* =======================================================
      COURS
      ======================================================= */
   var ICONS = {
@@ -487,13 +581,45 @@ window.FA = (function(){
     greet();
     $$('#filterRow .filter-btn').forEach(function(x){ x.classList.toggle('active', x.dataset.lvl === moduleFilter); });
     var list = TS.allModules().filter(function(m){ return moduleFilter === 'all' || m.level === moduleFilter; });
-    $('#coursesSub').textContent = list.length + ' modules affichés — leçon complète, exemples audio et exercices corrigés dans chacun.';
+    var openCount = list.filter(function(m){ return TS.moduleUnlocked(m.id); }).length;
+    $('#coursesSub').textContent = openCount + ' module' + (openCount > 1 ? 's' : '') + ' ouvert' + (openCount > 1 ? 's' : '') +
+      ' sur ' + list.length + ' — chaque module se débloque quand le précédent est réussi à 70 %.';
+
+    var bar = $('#unlockBar');
+    if(bar){
+      var granted = LEVELS.filter(function(l){ return TS.levelGranted(l); });
+      bar.innerHTML =
+        '<div class="unlock-text">' +
+          (granted.length
+            ? '🔓 Niveau' + (granted.length > 1 ? 'x' : '') + ' ouvert' + (granted.length > 1 ? 's' : '') + ' par ton professeur : <b>' + granted.join(', ') + '</b>'
+            : 'Ton professeur peut ouvrir un niveau entier avec un code.') +
+        '</div>' +
+        '<form class="unlock-form" id="unlockForm">' +
+          '<input type="text" id="unlockCode" placeholder="Code du professeur" autocomplete="off" spellcheck="false">' +
+          '<button type="submit">Valider</button>' +
+        '</form>';
+      $('#unlockForm').addEventListener('submit', function(ev){
+        ev.preventDefault();
+        var code = $('#unlockCode').value;
+        TS.grantWithCode(code).then(function(lvl){
+          if(lvl){
+            TS.toast('Niveau ' + lvl + ' ouvert par ton professeur.', 'ok');
+            $('#unlockCode').value = '';
+            renderModules();
+          } else {
+            TS.toast('Code inconnu.', 'err');
+          }
+        });
+      });
+    }
     var grid = $('#moduleGrid');
     grid.innerHTML = list.map(function(m, idx){
       var p = TS.moduleProgress(m.id);
       var pct = p ? Math.round((p.score || 0) / (p.total || m.exercises.length) * 100) : 0;
       var match = m.level === state.level;
-      return '<button type="button" class="module-card tilt' + (match ? ' match' : '') + '" data-mod="' + m.id + '">' +
+      var open = TS.moduleUnlocked(m.id);
+      return '<button type="button" class="module-card tilt' + (match ? ' match' : '') + (open ? '' : ' locked') +
+        '" data-mod="' + m.id + '"' + (open ? '' : ' data-locked="1"') + '>' +
         '<div class="module-top">' +
           '<div class="icon-badge' + (idx % 3 === 0 ? ' gold' : '') + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="' + (idx % 3 === 0 ? '#0E1B33' : '#fff') + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[m.icon] || ICONS.book) + '</svg>' +
@@ -504,12 +630,21 @@ window.FA = (function(){
         '<p class="module-desc">' + m.goal.replace(/<[^>]+>/g, '') + '</p>' +
         '<div class="module-progress-track"><div class="module-progress-fill" style="width:' + pct + '%"></div></div>' +
         '<div class="module-status"><span>' + (p ? p.score + '/' + p.total + ' exercices réussis' : m.exercises.length + ' exercices') + '</span>' +
-          (p && p.done ? '<span class="tag-done">Terminé</span>' : '<span class="tag-live">Leçon disponible</span>') + '</div>' +
+          (!open ? '<span class="tag-lock">🔒 Verrouillé</span>'
+                 : p && p.done ? '<span class="tag-done">Terminé</span>'
+                 : '<span class="tag-live">Leçon disponible</span>') + '</div>' +
+        (open ? '' : '<p class="lock-why">' + esc(TS.lockReason(m.id)) + '</p>') +
       '</button>';
     }).join('');
     $$('.module-card', grid).forEach(function(c){
       attachTilt(c, 7);
-      c.addEventListener('click', function(){ openLesson(c.dataset.mod); });
+      c.addEventListener('click', function(){
+        if(c.dataset.locked === '1'){
+          TS.toast(TS.lockReason(c.dataset.mod) || 'Ce module se débloquera avec ta progression.');
+          return;
+        }
+        openLesson(c.dataset.mod);
+      });
     });
   }
 
@@ -544,6 +679,11 @@ window.FA = (function(){
   function openLesson(id){
     var m = TS.moduleById(id);
     if(!m){ TS.toast('Module introuvable.', 'err'); return; }
+    if(!TS.moduleUnlocked(id)){
+      TS.toast(TS.lockReason(id) || "Ce module n'est pas encore ouvert.");
+      renderModules(); showView('view-courses');
+      return;
+    }
     state.lastModule = id; TS.persist();
 
     var host = $('#lessonShell');
@@ -731,10 +871,11 @@ window.FA = (function(){
       '<div class="gl">' + (passed ? 'Devoir validé — ' + pct + ' %. ' + (pct === 100 ? 'Sans faute, bravo.' : 'Relis les explications des questions ratées.')
                                    : 'Devoir non validé (' + pct + ' %). Refais-le après avoir relu la leçon.') + '</div></div>' +
       '<div class="paper-actions">' +
-        '<a class="btn-whatsapp" target="_blank" rel="noopener" href="' + TS.waLink(msg) + '">Envoyer au professeur</a>' +
+        '<button type="button" class="btn-whatsapp" data-msg="1">Envoyer au professeur</button>' +
         '<button type="button" class="btn-outline-navy" id="redoDevoir">Refaire ce devoir</button>' +
         '<button type="button" class="btn-outline-navy" id="backRoom2">Retour à la salle</button>' +
       '</div></div>';
+    bindMsgButton(box, 'Question sur un cours', msg);
     $('#redoDevoir').addEventListener('click', function(){ openDevoir(lvl, d.id); });
     $('#backRoom2').addEventListener('click', function(){ currentRoom = lvl; renderRooms(); showView('view-exams'); });
     box.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block:'center' });
@@ -861,10 +1002,11 @@ window.FA = (function(){
       '<div class="gl">Questions : ' + good + '/' + autoTotal + ' · Expression écrite : ' + words + ' mots, ' + crits + '/' + critTotal + ' critères cochés</div></div>' +
       '<p style="font-size:.88rem;color:var(--muted);margin-bottom:14px;">La partie « expression écrite » ne peut pas être notée par la machine : envoie ton texte au professeur pour une vraie correction. Ta copie est enregistrée sur cet appareil.</p>' +
       '<div class="paper-actions">' +
-        '<a class="btn-whatsapp" target="_blank" rel="noopener" href="' + TS.waLink(msg) + '">Envoyer ma copie au professeur</a>' +
+        '<button type="button" class="btn-whatsapp" data-msg="1">Envoyer ma copie au professeur</button>' +
         '<button type="button" class="btn-outline-navy" id="redoCompo">Refaire la composition</button>' +
         '<button type="button" class="btn-outline-navy" id="backRoom4">Retour à la salle</button>' +
       '</div>';
+    bindMsgButton($('#compoResult'), 'Correction d\'une composition', msg);
     $('#redoCompo').addEventListener('click', function(){ openCompo(lvl, c.id); });
     $('#backRoom4').addEventListener('click', function(){ currentRoom = lvl; renderRooms(); showView('view-exams'); });
     $('#compoResult').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block:'start' });
@@ -956,7 +1098,7 @@ window.FA = (function(){
           (passed ? (next ? 'Continue avec la salle ' + next + ' quand tu veux.' : 'Tu as terminé le parcours complet. Bravo, champion.')
                   : 'Revois les corrections ci-dessous et reviens quand tu veux : la salle reste ouverte.') + '</p>' +
         '<div class="result-actions">' +
-          '<a class="btn-whatsapp" target="_blank" rel="noopener" href="' + TS.waLink(msg) + '">Envoyer mon résultat au professeur</a>' +
+          '<button type="button" class="btn-whatsapp" data-msg="1">Envoyer mon résultat au professeur</button>' +
           '<button type="button" class="btn-outline-navy" id="retryExam">Repasser cet examen</button>' +
           '<button type="button" class="btn-outline-navy" id="backRooms">Retour aux salles</button>' +
         '</div>' +
@@ -968,6 +1110,7 @@ window.FA = (function(){
         }).join('') + '</div>' +
       '</div>';
     $('#examProgress').style.width = '100%';
+    bindMsgButton(card, 'Résultat d\'examen', msg);
     $('#retryExam').addEventListener('click', function(){ startExam(lvl); });
     $('#backRooms').addEventListener('click', function(){ currentRoom = lvl; renderRooms(); showView('view-exams'); });
     if(passed) TS.toast('Salle ' + lvl + ' validée : ' + exam.score + '/' + total + ' !', 'ok');
@@ -979,6 +1122,11 @@ window.FA = (function(){
   /* =======================================================
      SESSION
      ======================================================= */
+  $('#footMsg').addEventListener('click', function(){ openMessage('Question sur un cours', ''); });
+  $('#headerMsg').addEventListener('click', function(){
+    openMessage('Question sur un cours', '');
+  });
+
   $('#logoutBtn').addEventListener('click', function(){
     TS.persist(); TS.clearSession(); stopExam();
     TS.resetState();
