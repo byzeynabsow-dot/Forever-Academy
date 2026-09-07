@@ -148,15 +148,27 @@ export default async (req, context) => {
   } catch { profile = {}; }
 
   const now = Date.now();
-  const payload = {
+  const instruction = buildInstruction(profile);
+
+  /* Le verrouillage de la configuration dans le jeton n'existe pas dans
+     toutes les versions de l'API : certaines refusent les champs
+     liveConnectConstraints / lockAdditionalFields. On tente d'abord la
+     version verrouillée — la plus sûre — et on retombe automatiquement
+     sur la version simple si Google ne connaît pas ces champs.
+     Ce qui compte le plus reste acquis dans les deux cas : la clé ne
+     quitte jamais le serveur et le jeton expire en quelques minutes. */
+  const base = {
     uses: 1,
     newSessionExpireTime: new Date(now + SESSION_START_WINDOW_MS).toISOString(),
-    expireTime: new Date(now + SESSION_MAX_MS).toISOString(),
+    expireTime: new Date(now + SESSION_MAX_MS).toISOString()
+  };
+  const locked = {
+    ...base,
     liveConnectConstraints: {
       model,
       config: {
         responseModalities: ['AUDIO'],
-        systemInstruction: { parts: [{ text: buildInstruction(profile) }] },
+        systemInstruction: { parts: [{ text: instruction }] },
         inputAudioTranscription: {},
         outputAudioTranscription: {}
       }
@@ -164,24 +176,34 @@ export default async (req, context) => {
     lockAdditionalFields: []
   };
 
-  let upstream;
-  try {
-    upstream = await fetch(`${API_HOST}/${apiVersion}/auth_tokens`, {
+  async function ask(payload) {
+    const res = await fetch(`${API_HOST}/${apiVersion}/auth_tokens`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(payload)
     });
+    return { res, raw: await res.text() };
+  }
+
+  let attempt, constraintsLocked = true;
+  try {
+    attempt = await ask(locked);
+    // « Unknown name » = cette version ignore les champs de verrouillage.
+    if (!attempt.res.ok && attempt.res.status === 400 && /Unknown name/i.test(attempt.raw)) {
+      constraintsLocked = false;
+      attempt = await ask(base);
+    }
   } catch {
     return json({ error: 'upstream_unreachable', message: "Impossible de joindre Gemini. Réessaie dans un instant." }, 502);
   }
 
-  const raw = await upstream.text();
+  const { res: upstream, raw } = attempt;
   if (!upstream.ok) {
-    /* On relaie le motif exact de Google — précieux au premier essai —
+    /* On relaie le motif exact de Google — précieux au diagnostic —
        sans jamais renvoyer la clé, absente de ces réponses. */
     let reason = raw.slice(0, 400);
     try { reason = JSON.parse(raw)?.error?.message || reason; } catch {}
-    return json({ error: 'token_refused', apiVersion, model, message: reason }, upstream.status);
+    return json({ error: 'token_refused', apiVersion, model, constraintsLocked, message: reason }, upstream.status);
   }
 
   let data;
@@ -196,6 +218,10 @@ export default async (req, context) => {
     token,
     model,
     apiVersion,
+    /* false → la consigne pédagogique n'a pas pu être scellée dans le
+       jeton : le navigateur doit l'envoyer avec la connexion. */
+    constraintsLocked,
+    systemInstruction: constraintsLocked ? undefined : instruction,
     expiresInMs: SESSION_MAX_MS,
     startWindowMs: SESSION_START_WINDOW_MS
   });

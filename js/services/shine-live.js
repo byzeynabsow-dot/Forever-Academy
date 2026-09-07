@@ -212,11 +212,12 @@ window.ShineLive = (function () {
         apiKey: info.token,
         httpOptions: { apiVersion: info.apiVersion || 'v1alpha' }
       });
-      /* Avec un jeton, la consigne est déjà verrouillée côté serveur.
-         Avec une clé directe, il faut l'envoyer ici. */
+      /* La consigne pédagogique est scellée dans le jeton quand l'API le
+         permet (info.constraintsLocked). Sinon — version d'API qui ignore
+         ce verrouillage, ou clé directe — on l'envoie avec la connexion. */
       var liveConfig = { responseModalities: ['AUDIO'] };
-      if (info.direct) {
-        liveConfig.systemInstruction = { parts: [{ text: sysPrompt }] };
+      if (info.direct || info.constraintsLocked === false) {
+        liveConfig.systemInstruction = { parts: [{ text: info.systemInstruction || sysPrompt }] };
         liveConfig.inputAudioTranscription = {};
         liveConfig.outputAudioTranscription = {};
       }

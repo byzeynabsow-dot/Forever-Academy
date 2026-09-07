@@ -70,6 +70,8 @@ assets/video/*.mp4      fonds vidéo
 
 SHINE parle et écoute en temps réel via l'API Gemini Live. L'élève parle dans son micro, SHINE répond à voix haute, corrige une erreur à la fois et la transcription s'affiche des deux côtés.
 
+**Compatibilité des versions d'API.** Certaines versions de `auth_tokens` refusent les champs `liveConnectConstraints` / `lockAdditionalFields` (`400 Unknown name`). La fonction tente d'abord la version verrouillée, puis retombe automatiquement sur la version simple : le jeton est obtenu dans les deux cas. Quand le verrouillage n'est pas possible, la consigne pédagogique voyage avec la connexion au lieu d'être scellée — la clé, elle, ne quitte jamais le serveur et le jeton expire toujours en quelques minutes. Le diagnostic indique lequel des deux modes est actif.
+
 **La clé n'est jamais dans le navigateur.** L'architecture est celle recommandée par Google :
 
 ```

@@ -389,7 +389,12 @@ window.Shine = (function () {
       if (info.message) lines.push('message : <i>' + esc(info.message) + '</i>');
       if (info.apiVersion) lines.push('version d\'API essayée : <b>' + esc(info.apiVersion) + '</b>');
       if (info.model) lines.push('modèle : <b>' + esc(info.model) + '</b>');
-      if (info.token) lines.push('✅ jeton reçu — la clé fonctionne.');
+      if (info.token) {
+        lines.push('✅ jeton reçu — la clé fonctionne.');
+        lines.push(info.constraintsLocked === false
+          ? '⚠️ cette version d\'API ne scelle pas la consigne dans le jeton : elle est envoyée avec la connexion.'
+          : '✅ consigne pédagogique scellée dans le jeton.');
+      }
     } else if (txt) {
       lines.push('<i>' + esc(txt.slice(0, 300)) + '</i>');
     }
@@ -400,7 +405,9 @@ window.Shine = (function () {
     } else if (info && info.error === 'origin_refused') {
       lines.push('👉 <b>ALLOWED_ORIGINS</b> ne correspond pas à l\'adresse de ce site : ' + esc(location.origin));
     } else if (info && info.error === 'token_refused') {
-      lines.push('👉 Google refuse la clé ou la version d\'API. Essaie d\'ajouter la variable <b>GEMINI_API_VERSION</b> avec la valeur <b>v1beta</b>, puis redéploie.');
+      lines.push(/API key|API_KEY|UNAUTHENT|permission/i.test(info.message || '')
+        ? '👉 Google refuse la clé. Vérifie <b>GEMINI_API_KEY</b> (format AIza…) et que l\'API Generative Language est activée.'
+        : '👉 Google refuse la requête. Essaie de changer <b>GEMINI_API_VERSION</b> (v1beta ou v1alpha), ou envoie-moi ce message.');
     } else if (res.status === 404) {
       lines.push('👉 La fonction n\'est pas déployée : le dossier <b>netlify/functions</b> doit être présent dans ce qui a été envoyé.');
     }
