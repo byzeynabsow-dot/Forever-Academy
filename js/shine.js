@@ -233,6 +233,16 @@ window.Shine = (function () {
 
     /* Message d'aptitude honnête, avant toute tentative */
     var foot = $('#shineFoot');
+    /* Avertissement honnête quand la clé est écrite dans la page. */
+    if (ShineLive.mode() === 'direct') {
+      var warn = $('#shineNotice');
+      if (warn) {
+        warn.className = 'shine-notice show warn';
+        warn.innerHTML = "⚠️ <b>Clé Gemini exposée.</b> Elle est écrite dans le code de cette page : " +
+          "toute personne qui ouvre le code source peut la lire et l'utiliser à tes frais. " +
+          "Surveille ton quota, ou passe par un serveur (voir js/config.js).";
+      }
+    }
     if (!sup.secure) {
       foot.innerHTML = "⚠️ Le micro exige une adresse <b>https://</b>. Ouvert en fichier local, seul le mode écrit fonctionne.";
     } else if (!sup.voice) {

@@ -18,16 +18,20 @@ window.ShineAvatar = (function () {
   /* import() exige un chemin absolu ou commençant par « ./ » :
      on résout donc les URL par rapport au document. */
   function url(rel) { return new URL(rel, document.baseURI).href; }
-  var THREE_URL = url('vendor/three/three.module.js');
-  var GLTF_URL = url('vendor/three/loaders/GLTFLoader.js');
-  var MODEL_URL = url('assets/3d/shine.glb');
+
+  /* Dans le fichier autonome, three.js et les modèles sont embarqués et
+     exposés par window.TS_BUNDLED. Sinon on les sert depuis le dossier. */
+  var B = window.TS_BUNDLED || {};
+  var THREE_URL = B.three || url('vendor/three/three.module.js');
+  var GLTF_URL = B.gltf || url('vendor/three/loaders/GLTFLoader.js');
+  var MODEL_URL = B.model || url('assets/3d/shine.glb');
 
   /* Animations livrées à part : ces fichiers ne contiennent que les clips
      (le maillage et les textures en ont été retirés par
      tools/extract-animation.py), d'où quelques dizaines de Ko au lieu de
      3,4 Mo par animation. Pour en ajouter une, il suffit d'étendre cette
      liste. */
-  var ANIM_FILES = ['assets/3d/anim-gesture.glb'];
+  var ANIM_FILES = (B.anims && B.anims.length) ? B.anims : ['assets/3d/anim-gesture.glb'];
 
   /* Quel clip joue dans quel état. Un nom absent est ignoré sans casse. */
   var ROLES = {
@@ -116,7 +120,7 @@ window.ShineAvatar = (function () {
       /* Les animations supplémentaires arrivent en tâche de fond :
          l'avatar est déjà visible et animé pendant leur chargement. */
       ANIM_FILES.forEach(function (f) {
-        new mod.GLTFLoader().load(url(f), function (extra) {
+        new mod.GLTFLoader().load(/^(blob:|data:|https?:)/.test(f) ? f : url(f), function (extra) {
           registerClips(extra.animations);
           apply(state);
         }, null, function () { /* clip absent : on garde ceux qu'on a */ });

@@ -135,29 +135,47 @@ window.ShineLive = (function () {
     if (session) return;
     setState('connecting');
 
-    /* 1. jeton éphémère — la clé reste sur le serveur */
-    var res, info;
-    try {
-      res = await fetch('/api/token', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          level: profile.level || 'A2',
-          name: profile.name || '',
-          topic: profile.topic || ''
-        })
-      });
-      info = await res.json();
-    } catch (e) {
-      fail("Le service vocal est injoignable. Vérifie ta connexion.", String(e));
-      return;
-    }
-    if (!res.ok) {
-      var msg = info && info.message ? info.message : 'Le service vocal a refusé la connexion.';
-      if (info && info.error === 'not_configured') msg = "SHINE vocal n'est pas encore configuré sur ce site (clé Gemini absente).";
-      if (info && info.error === 'rate_limited') msg = info.message;
-      fail(msg, info && info.error);
-      return;
+    /* 1. obtenir de quoi se connecter.
+       MODE 1 : un serveur nous donne un jeton court (la clé reste chez lui).
+       MODE 2 : la clé est écrite dans config.js — pratique, mais publique. */
+    var CFG = window.TS_CONFIG || {};
+    var directKey = String(CFG.geminiApiKey || '').trim();
+    var info, sysPrompt = buildInstruction(profile);
+
+    if (directKey) {
+      info = {
+        token: directKey,
+        model: CFG.geminiLiveModel || 'gemini-3.1-flash-live-preview',
+        apiVersion: 'v1beta',
+        direct: true,
+        expiresInMs: 10 * 60 * 1000
+      };
+    } else {
+      var res;
+      try {
+        res = await fetch(CFG.tokenEndpoint || '/api/token', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            level: profile.level || 'A2',
+            name: profile.name || '',
+            topic: profile.topic || ''
+          })
+        });
+        info = await res.json();
+      } catch (e) {
+        /* Pas de serveur joignable ET pas de clé dans la page : c'est le
+           cas d'un site hébergé sans backend. On le dit franchement. */
+        fail("SHINE vocal n'est pas configuré. Ouvre js/config.js et colle ta clé Gemini dans « geminiApiKey », " +
+             "ou installe la fonction serveur qui fournit /api/token.", String(e));
+        return;
+      }
+      if (!res.ok) {
+        var msg = info && info.message ? info.message : 'Le service vocal a refusé la connexion.';
+        if (info && info.error === 'not_configured') msg = "SHINE vocal n'est pas encore configuré sur ce site (clé Gemini absente).";
+        fail(msg, info && info.error);
+        return;
+      }
     }
 
     /* 2. SDK officiel */
@@ -194,10 +212,17 @@ window.ShineLive = (function () {
         apiKey: info.token,
         httpOptions: { apiVersion: info.apiVersion || 'v1alpha' }
       });
+      /* Avec un jeton, la consigne est déjà verrouillée côté serveur.
+         Avec une clé directe, il faut l'envoyer ici. */
+      var liveConfig = { responseModalities: ['AUDIO'] };
+      if (info.direct) {
+        liveConfig.systemInstruction = { parts: [{ text: sysPrompt }] };
+        liveConfig.inputAudioTranscription = {};
+        liveConfig.outputAudioTranscription = {};
+      }
       session = await ai.live.connect({
         model: info.model,
-        // La configuration pédagogique est déjà verrouillée dans le jeton.
-        config: { responseModalities: ['AUDIO'] },
+        config: liveConfig,
         callbacks: {
           onopen: function () { touchIdle(); setState(micEnabled ? 'listening' : 'idle'); },
           onmessage: handleMessage,
@@ -262,6 +287,50 @@ window.ShineLive = (function () {
     micNode.connect(mute).connect(micCtx.destination);
     micEnabled = true;
     setState('listening');
+  }
+
+  /* Consigne pédagogique — utilisée seulement en mode clé directe.
+     En mode jeton, c'est le serveur qui la construit et la verrouille. */
+  function buildInstruction(profile) {
+    var level = ['A1','A2','B1','B2','C1'].indexOf(profile.level) >= 0 ? profile.level : 'A2';
+    var name = String(profile.name || '').slice(0, 40) || 'the learner';
+    var topic = String(profile.topic || '').replace(/[\r\n]+/g, ' ').slice(0, 300);
+    var pace = {
+      A1: "Speak very slowly and simply. Use short present-tense sentences and the 500 most common words. Ask one short question at a time. Expect one- or two-word answers and celebrate them.",
+      A2: "Speak slowly and clearly. Use everyday vocabulary and simple past and future. Ask short questions and help the learner extend answers to a full sentence.",
+      B1: "Speak at a natural but unhurried pace. Encourage full sentences, opinions and reasons. Introduce useful connectors and phrasal verbs.",
+      B2: "Speak at natural pace. Push for nuance, hypotheticals and argument. Correct register and collocation errors, not just grammar.",
+      C1: "Speak at full natural pace, including idiom and understatement. Challenge precision, register and structure. Corrections should be about style and subtlety."
+    }[level];
+    return [
+      "You are SHINE, the English teacher of the Talk & Shine academy.",
+      "You are speaking with " + name + ", a French-speaking learner at CEFR level " + level + ".",
+      pace,
+      topic ? "Today's focus, taken from the lesson the learner has open: " + topic
+            : "Start by asking what the learner would like to practise today.",
+      "",
+      "How you correct, in this exact order:",
+      "1. Let the learner finish their sentence. Never interrupt to correct.",
+      "2. React to the meaning first, warmly and briefly.",
+      "3. Name one error only — the one that matters most.",
+      "4. Give the correct form and say why in one short sentence.",
+      "5. Ask the learner to say the corrected sentence back to you.",
+      "",
+      "Rules you never break:",
+      "- Never mock, never say the learner is bad. Encourage every attempt.",
+      "- Speak English by default. Switch to French only to unblock a genuine misunderstanding, then return to English.",
+      "- Keep your turns short: two or three sentences, then hand the floor back.",
+      "- Never claim to score or measure pronunciation numerically. Give qualitative feedback in words.",
+      "- You are SHINE from Talk & Shine. Never mention Google, Gemini, or that you are a language model."
+    ].join('\n');
+  }
+
+  /* Quel mode est actif ? Utilisé par l'interface pour prévenir
+     honnêtement quand la clé est exposée dans la page. */
+  function mode() {
+    var CFG = window.TS_CONFIG || {};
+    if (String(CFG.geminiApiKey || '').trim()) return 'direct';
+    return 'token';
   }
 
   /* ---------------- messages du serveur ---------------- */
@@ -344,6 +413,7 @@ window.ShineLive = (function () {
 
   return {
     support: support,
+    mode: mode,
     start: start,
     stop: stop,
     sendText: sendText,
