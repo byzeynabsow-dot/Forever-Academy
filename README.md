@@ -82,6 +82,24 @@ La consigne pédagogique (niveau CECRL, façon de corriger, sujet de la leçon) 
 
 Garde-fous de coût : 12 sessions par heure et par IP, fermeture automatique après 90 s de silence, plafond dur de 10 minutes par session.
 
+### Comptes vérifiés côté serveur
+
+`netlify/functions/auth.mjs` donne une identité réelle, vérifiable — la fondation qui manquait pour la messagerie, les classes et l'accès réservé.
+
+| | |
+|---|---|
+| Mots de passe | `scrypt` (sel aléatoire par compte, comparaison à durée constante). Jamais stockés, jamais transmis au navigateur |
+| Session | jeton signé HMAC-SHA256 dans un cookie **httpOnly** — le JavaScript de la page ne peut pas le lire, donc un XSS ne le vole pas |
+| Stockage | Netlify Blobs en cohérence forte : un compte créé est lisible par la connexion qui suit |
+| Progression | suit l'élève d'un appareil à l'autre : il se connecte ailleurs et retrouve son niveau et ses modules |
+| Tentatives | blocage 15 minutes après 8 échecs |
+| Énumération | même message que le compte existe ou non |
+| SHINE vocal | réservé aux inscrits : plus d'endpoint ouvert à tous |
+
+Variable requise : **`SESSION_SECRET`** — une chaîne aléatoire d'au moins 24 caractères. Sans elle, les comptes en ligne sont désactivés et le site retombe sur les comptes locaux.
+
+**Deux modes, détectés tout seuls.** Si `/api/auth` répond, le site passe en comptes serveur. Sinon — fichier autonome, hors ligne — tout continue de fonctionner sur l'appareil comme avant. Aucune des 884 questions ne dépend du serveur.
+
 ### Sécurité
 
 Le projet est réglé pour que **la clé ne quitte jamais le serveur**.

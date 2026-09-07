@@ -1129,6 +1129,7 @@ window.FA = (function(){
 
   $('#logoutBtn').addEventListener('click', function(){
     TS.persist(); TS.clearSession(); stopExam();
+    if(window.Account && Account.isServer()) Account.logout();
     TS.resetState();
     if(window.FA_auth) FA_auth.setMode('login');
     $('#password').value = ''; $('#password2').value = '';
@@ -1144,6 +1145,35 @@ window.FA = (function(){
   }
 
   (function boot(){
+    /* Le serveur a le dernier mot sur l'identité : s'il connaît une
+       session valide, on la reprend, avec la progression enregistrée. */
+    if(window.Account){
+      Account.detect().then(function(user){
+        if(user){
+          TS.resetState();
+          state.name = user.name; state.email = user.email;
+          state.level = user.level || ''; state.guest = false; state.provider = 'server';
+          return Account.pull().then(function(remote){
+            if(remote){
+              state.level = remote.level || state.level;
+              state.progress = remote.progress || {};
+              state.devoirs = remote.devoirs || {};
+              state.compos = remote.compos || {};
+              state.finals = remote.finals || {};
+              state.granted = remote.granted || {};
+              state.lastModule = remote.lastModule || '';
+            }
+            afterAuth();
+          });
+        }
+        bootLocal();
+      }).catch(bootLocal);
+      return;
+    }
+    bootLocal();
+  })();
+
+  function bootLocal(){
     var email = TS.readSession();
     if(email){
       var u = TS.loadDB()[email];
@@ -1156,7 +1186,7 @@ window.FA = (function(){
       afterAuth(); return;
     }
     showView('view-auth');
-  })();
+  }
 
   return { afterAuth: afterAuth, showView: showView, openLesson: openLesson };
 })();

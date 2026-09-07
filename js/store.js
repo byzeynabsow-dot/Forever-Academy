@@ -110,6 +110,9 @@ window.TS = (function(){
   }
 
   function persist(){
+    // Compte en ligne : la progression part aussi sur le serveur, pour
+    // suivre l'élève d'un appareil à l'autre.
+    if(window.Account && Account.isServer() && !state.guest) Account.schedulePush(state);
     if(state.guest || !state.email) { sessionCache(); return; }
     var db = loadDB();
     var u = db[state.email] || {};
