@@ -96,6 +96,21 @@ Le modèle `assets/3d/shine.glb` (3,3 Mo, Avaturn) est rendu avec three.js, **se
 
 Un seul contexte WebGL pour tout le site : le canvas est déplacé entre la page d'accueil et la page SHINE au lieu d'être recréé. Le rendu se met en pause quand l'avatar sort de l'écran.
 
+**Les animations.** Les clips vivent dans des fichiers séparés, allégés du maillage et des textures :
+
+| Fichier | Contenu | Poids |
+|---|---|---|
+| `assets/3d/shine.glb` | le personnage + son animation de repos | 3,3 Mo |
+| `assets/3d/anim-gesture.glb` | le clip `gesture_1` seul | 144 Ko |
+
+Un export Avaturn pèse 3,4 Mo même quand seule l'animation change. `tools/extract-animation.py` jette le maillage, les matériaux et les textures pour ne garder que les courbes d'animation — **96 % de moins**. Le squelette étant identique d'un export à l'autre, three.js rejoue ces clips sur le modèle déjà chargé.
+
+```bash
+python3 tools/extract-animation.py nouveau-modele.glb assets/3d/anim-xxx.glb
+```
+
+Puis il suffit d'ajouter le fichier à `ANIM_FILES` et son nom de clip à `ROLES`, dans `js/services/shine-avatar.js`. Les clips s'enchaînent en fondu de 0,5 s selon l'état : repos et écoute sur l'idle, **parole sur `gesture_1`** — SHINE gesticule en parlant. Les réactions à la voix (tête, nuque, buste) s'ajoutent par-dessus le clip au lieu de l'écraser.
+
 **Ce que le modèle permet, et ce qu'il ne permet pas.** Ce fichier contient 52 os et une animation « idle », mais **aucune morph target et aucun os de mâchoire**. Donc :
 
 - ✅ tête, nuque et buste animés au rythme de l'amplitude réelle de la voix

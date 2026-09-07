@@ -22,10 +22,27 @@ window.ShineAvatar = (function () {
   var GLTF_URL = url('vendor/three/loaders/GLTFLoader.js');
   var MODEL_URL = url('assets/3d/shine.glb');
 
+  /* Animations livrées à part : ces fichiers ne contiennent que les clips
+     (le maillage et les textures en ont été retirés par
+     tools/extract-animation.py), d'où quelques dizaines de Ko au lieu de
+     3,4 Mo par animation. Pour en ajouter une, il suffit d'étendre cette
+     liste. */
+  var ANIM_FILES = ['assets/3d/anim-gesture.glb'];
+
+  /* Quel clip joue dans quel état. Un nom absent est ignoré sans casse. */
+  var ROLES = {
+    idle:       ['IdleV4.2(maya_head)'],
+    connecting: ['IdleV4.2(maya_head)'],
+    listening:  ['IdleV4.2(maya_head)'],
+    thinking:   ['IdleV4.2(maya_head)'],
+    speaking:   ['gesture_1', 'IdleV4.2(maya_head)'],
+    error:      ['IdleV4.2(maya_head)']
+  };
+
   var THREE = null, ready = false, loading = null;
   var renderer, scene, camera, mixer, clock, root;
+  var actions = {}, current = null, currentName = '';
   var bones = { head: null, neck: null, spine: null, spine1: null, spine2: null };
-  var basePose = {};
   var host = null, raf = null, visible = true;
   var state = 'idle', level = 0, t = 0;
   var lastFail = null;
@@ -91,17 +108,21 @@ window.ShineAvatar = (function () {
           else if (n === 'Spine2') bones.spine2 = o;
         }
       });
-      /* On mémorise la pose de repos pour n'ajouter que des écarts. */
-      ['head', 'neck', 'spine', 'spine1', 'spine2'].forEach(function (k) {
-        if (bones[k]) basePose[k] = bones[k].rotation.clone();
-      });
-
       scene.add(root);
 
-      if (gltf.animations && gltf.animations.length) {
-        mixer = new THREE.AnimationMixer(root);
-        mixer.clipAction(gltf.animations[0]).play();
-      }
+      mixer = new THREE.AnimationMixer(root);
+      registerClips(gltf.animations);
+
+      /* Les animations supplémentaires arrivent en tâche de fond :
+         l'avatar est déjà visible et animé pendant leur chargement. */
+      ANIM_FILES.forEach(function (f) {
+        new mod.GLTFLoader().load(url(f), function (extra) {
+          registerClips(extra.animations);
+          apply(state);
+        }, null, function () { /* clip absent : on garde ceux qu'on a */ });
+      });
+
+      apply('idle');
 
       clock = new THREE.Clock();
       ready = true;
@@ -116,6 +137,42 @@ window.ShineAvatar = (function () {
       throw e;
     });
     return loading;
+  }
+
+  function registerClips(list) {
+    (list || []).forEach(function (clip) {
+      if (actions[clip.name]) return;
+      var a = mixer.clipAction(clip);
+      a.setLoop(THREE.LoopRepeat, Infinity);
+      a.enabled = true;
+      actions[clip.name] = a;
+    });
+  }
+
+  /* Choisit le clip correspondant à l'état et enchaîne en fondu.
+     Un fondu plutôt qu'une coupure : sinon l'avatar « saute ». */
+  function apply(st) {
+    if (!mixer) return;
+    var wanted = ROLES[st] || ROLES.idle;
+    var name = null;
+    for (var i = 0; i < wanted.length; i++) {
+      if (actions[wanted[i]]) { name = wanted[i]; break; }
+    }
+    if (!name) {
+      var keys = Object.keys(actions);
+      if (!keys.length) return;
+      name = keys[0];
+    }
+    if (name === currentName) return;
+
+    var next = actions[name];
+    next.reset();
+    next.setEffectiveTimeScale(1);
+    next.setEffectiveWeight(1);
+    next.play();
+    if (current && current !== next) current.crossFadeTo(next, 0.5, false);
+    current = next;
+    currentName = name;
   }
 
   /* Ne pas faire tourner le GPU quand l'avatar n'est pas à l'écran. */
@@ -148,41 +205,33 @@ window.ShineAvatar = (function () {
     var target = (state === 'speaking' && window.ShineLive) ? ShineLive.getOutputLevel() : 0;
     level += (target - level) * Math.min(1, dt * 12);
 
-    var b = bones, P = basePose;
+    /* Les rotations ci-dessous s'AJOUTENT à ce que le clip vient de
+       calculer (mixer.update est passé juste avant) : le geste animé
+       reste visible, la réaction à la voix se superpose. */
+    var b = bones;
+    var breathe = Math.sin(t * 1.15) * 0.012;
 
-    if (b.head && P.head) {
-      // Parle : hochements marqués au rythme du son.
-      // Écoute : légère inclinaison vers l'apprenant.
-      // Réfléchit : le regard part sur le côté et vers le haut.
-      var nodX = state === 'speaking' ? Math.sin(t * 7.5) * level * 0.16 - level * 0.06 : 0;
-      var tiltZ = state === 'listening' ? 0.09 : state === 'thinking' ? -0.06 : 0;
-      var turnY = state === 'thinking' ? -0.24 + Math.sin(t * 0.5) * 0.05
-                : state === 'speaking' ? Math.sin(t * 1.3) * 0.07
-                : Math.sin(t * 0.45) * 0.05;
-      var upX = state === 'thinking' ? -0.1 : 0;
-      b.head.rotation.set(
-        P.head.x + nodX + upX + Math.sin(t * 0.7) * 0.012,
-        P.head.y + turnY,
-        P.head.z + tiltZ
-      );
+    if (b.head) {
+      var nod = state === 'speaking' ? Math.sin(t * 7.5) * level * 0.15 - level * 0.05 : 0;
+      var tilt = state === 'listening' ? 0.09 : state === 'thinking' ? -0.06 : 0;
+      var turn = state === 'thinking' ? -0.20 + Math.sin(t * 0.5) * 0.04
+               : state === 'speaking' ? Math.sin(t * 1.3) * 0.05
+               : Math.sin(t * 0.45) * 0.04;
+      var up = state === 'thinking' ? -0.09 : 0;
+      b.head.rotation.x += nod + up + Math.sin(t * 0.7) * 0.01;
+      b.head.rotation.y += turn;
+      b.head.rotation.z += tilt;
     }
-    if (b.neck && P.neck) {
-      b.neck.rotation.set(
-        P.neck.x + (state === 'speaking' ? Math.sin(t * 7.5 - 0.6) * level * 0.06 : 0),
-        P.neck.y + Math.sin(t * 0.4) * 0.03,
-        P.neck.z + (state === 'listening' ? 0.04 : 0)
-      );
+    if (b.neck) {
+      b.neck.rotation.x += state === 'speaking' ? Math.sin(t * 7.5 - 0.6) * level * 0.055 : 0;
+      b.neck.rotation.y += Math.sin(t * 0.4) * 0.025;
+      b.neck.rotation.z += state === 'listening' ? 0.04 : 0;
     }
-    // Respiration : présente dans tous les états, jamais figée.
-    var breathe = Math.sin(t * 1.15) * 0.014;
     ['spine', 'spine1', 'spine2'].forEach(function (k, i) {
-      if (b[k] && P[k]) {
-        b[k].rotation.set(
-          P[k].x + breathe * (1 - i * 0.25),
-          P[k].y + Math.sin(t * 0.33 + i) * 0.018 + (state === 'speaking' ? level * 0.03 : 0),
-          P[k].z
-        );
-      }
+      var bone = b[k];
+      if (!bone) return;
+      bone.rotation.x += breathe * (1 - i * 0.25);
+      bone.rotation.y += Math.sin(t * 0.33 + i) * 0.014 + (state === 'speaking' ? level * 0.025 : 0);
     });
 
     renderer.render(scene, camera);
@@ -197,7 +246,7 @@ window.ShineAvatar = (function () {
     if (renderer) { try { renderer.dispose(); renderer.domElement.remove(); } catch (e) {} }
     renderer = scene = camera = mixer = root = null;
     bones = { head: null, neck: null, spine: null, spine1: null, spine2: null };
-    basePose = {}; ready = false; loading = null; host = null;
+    ready = false; loading = null; host = null;
   }
 
   /* Déplace le rendu vers un autre conteneur sans recréer de contexte
@@ -221,7 +270,10 @@ window.ShineAvatar = (function () {
     /* Monte l'avatar dans `container`. Rejette si WebGL, le réseau ou
        le modèle échouent — l'appelant retombe alors sur l'avatar SVG. */
     mount: function (container) { return load(container); },
-    setState: function (s) { state = s; },
+    setState: function (s) { if (s === state) return; state = s; apply(s); },
+    /* Noms des clips réellement chargés — utile au diagnostic. */
+    clips: function () { return Object.keys(actions); },
+    playing: function () { return currentName; },
     isReady: function () { return ready; },
     lastError: function () { return lastFail; },
     start: start, stop: stop, dispose: dispose,
