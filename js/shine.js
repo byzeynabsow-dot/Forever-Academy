@@ -83,6 +83,7 @@ window.Shine = (function () {
     if (!head) return;
     var t = (now - t0) / 1000;
     var st = ShineLive.getState();
+    if (window.ShineAvatar && ShineAvatar.isReady()) ShineAvatar.setState(st);
 
     /* respiration + micro-mouvements de tête : discrets, jamais figés */
     var breathe = Math.sin(t * 1.1) * 1.4;
@@ -194,9 +195,11 @@ window.Shine = (function () {
     $('#shineShell').innerHTML =
       '<div class="shine-grid">' +
         '<div class="shine-stage idle" id="shineStage">' +
+          '<div class="shine-3d" id="shine3d"></div>' +
           avatarSVG() +
           '<div class="shine-id"><b>SHINE</b><span>Professeure d\'anglais · Talk &amp; Shine</span></div>' +
           '<span class="shine-status idle" id="shineStatus">Prête</span>' +
+          '<p class="shine-3d-note" id="shine3dNote" style="display:none;"></p>' +
         '</div>' +
 
         '<div class="shine-panel">' +
@@ -241,6 +244,7 @@ window.Shine = (function () {
     if (!wired) wire();
     if (!raf) raf = requestAnimationFrame(animate);
     setStatus(ShineLive.getState());
+    mount3D();
   }
 
   function wire() {
@@ -290,7 +294,48 @@ window.Shine = (function () {
     });
   }
 
-  function leave() { ShineLive.stop(); if (raf) { cancelAnimationFrame(raf); raf = null; } }
+  /* ---------------- avatar 3D ---------------- */
+  var tried3D = false;
+  function mount3D() {
+    var box = $('#shine3d'), stage = $('#shineStage');
+    if (!box || !window.ShineAvatar) return;
+
+    if (!ShineAvatar.supported()) {
+      // Pas de WebGL : on garde l'avatar SVG, et on le dit.
+      stage.classList.add('svg-mode');
+      note3D("Ce navigateur ne gère pas la 3D. SHINE s'affiche en version simplifiée.");
+      return;
+    }
+    if (ShineAvatar.isReady()) {
+      // Déjà chargé par la page d'accueil : on récupère le même canvas.
+      stage.classList.add('has-3d');
+      ShineAvatar.attachTo(box);
+      return;
+    }
+    if (tried3D) return;
+    tried3D = true;
+
+    stage.classList.add('loading-3d');
+    ShineAvatar.mount(box).then(function () {
+      stage.classList.remove('loading-3d');
+      stage.classList.add('has-3d');
+    }).catch(function (e) {
+      tried3D = false;
+      stage.classList.remove('loading-3d');
+      stage.classList.add('svg-mode');
+      note3D("Le modèle 3D n'a pas pu être chargé. SHINE s'affiche en version simplifiée.");
+    });
+  }
+  function note3D(msg) {
+    var el = $('#shine3dNote');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+  }
+
+  function leave() {
+    ShineLive.stop();
+    if (window.ShineAvatar) ShineAvatar.stop();
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+  }
 
   return { render: render, leave: leave };
 })();

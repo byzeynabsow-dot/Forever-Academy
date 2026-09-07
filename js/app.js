@@ -298,13 +298,91 @@ window.FA = (function(){
   /* =======================================================
      ACCUEIL
      ======================================================= */
+  /* Les six piliers du bandeau. « soon » marque honnêtement ce qui
+     n'existe pas encore : rien n'est présenté comme fonctionnel à tort. */
+  var PILLARS = [
+    { k:'live',  t:'LIVE CLASS',           d:'Cours en direct avec ton prof et tes camarades', c:'#8B5CF6', soon:true,
+      i:'<rect x="2" y="5" width="14" height="14" rx="2"/><path d="M22 8l-6 4 6 4z"/>' },
+    { k:'shine', t:'Coach IA SHINE',       d:'Ton guide quotidien personnalisé', c:'#2C6BE8', go:'shine',
+      i:'<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.3"/><circle cx="15" cy="10" r="1.3"/><path d="M9 15c2 1.5 4 1.5 6 0"/>' },
+    { k:'exam',  t:'Examens blancs',       d:'Évalue ton niveau et progresse', c:'#10B981', go:'exams',
+      i:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/>' },
+    { k:'jobs',  t:'English for Jobs',     d:'Prépare-toi pour ton avenir professionnel', c:'#F59E0B', soon:true,
+      i:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>' },
+    { k:'pron',  t:'Prononciation',        d:'Maîtrise les sons et parle comme un pro', c:'#A855F7', go:'courses',
+      i:'<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>' },
+    { k:'afr',   t:'Situations africaines',d:'Un anglais utile dans ton quotidien', c:'#EC4899', soon:true,
+      i:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>' }
+  ];
+
+  /* Les huit parcours. Ceux qui pointent vers du réel ouvrent une vraie
+     page ; les autres portent la mention « bientôt ». */
+  var PATHS = [
+    { t:'Cours A1 → C1',       d:'40 modules complets, du débutant à la maîtrise', c1:'#2C6BE8', c2:'#1B4FC0', go:'courses',
+      i:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>' },
+    { t:'Parler avec SHINE',   d:'Conversation vocale avec ta coach IA', c1:'#7C3AED', c2:'#5B21B6', go:'shine',
+      i:'<path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v4"/>' },
+    { t:'Salles d\'examen',    d:'Devoirs, compositions et examens finaux', c1:'#10B981', c2:'#047857', go:'exams',
+      i:'<path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/>' },
+    { t:'Test de niveau',      d:'20 questions pour situer ton anglais', c1:'#F59E0B', c2:'#B45309', go:'test',
+      i:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>' },
+    { t:'Live Class',          d:'Cours en direct avec ton professeur', c1:'#8B5CF6', c2:'#6D28D9', soon:true,
+      i:'<rect x="2" y="5" width="14" height="14" rx="2"/><path d="M22 8l-6 4 6 4z"/>' },
+    { t:'Shadowing IA',        d:'Répète après le modèle et affine ton accent', c1:'#0EA5E9', c2:'#0369A1', soon:true,
+      i:'<path d="M3 12h3l3-8 6 16 3-8h3"/>' },
+    { t:'English for Jobs',    d:'L\'anglais de ton métier', c1:'#F97316', c2:'#C2410C', soon:true,
+      i:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>' },
+    { t:'Situations africaines',d:'Dakar, marché, aéroport, entretien', c1:'#EC4899', c2:'#9D174D', soon:true,
+      i:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>' }
+  ];
+
+  function goTarget(key){
+    if(key === 'shine'){ Shine.render(''); showView('view-shine'); }
+    else if(key === 'exams'){ renderRooms(); showView('view-exams'); }
+    else if(key === 'courses'){ renderModules(); showView('view-courses'); }
+    else if(key === 'test'){ startPlacement(); showView('view-test'); }
+  }
+
   function renderHome(){
     greet();
     var g = TS.globalStats();
-    $('#homeTitle').textContent = 'Bonjour ' + (state.name || 'Champion') + ' 👋';
-    $('#homeSub').innerHTML = state.level
-      ? 'Niveau conseillé : <b>' + state.level + '</b>. Mais tous les niveaux sont ouverts — tu peux aller où tu veux, quand tu veux.'
-      : "Fais le test de niveau si tu veux un point de départ. Sinon, entre directement dans n'importe quel cours : rien n'est verrouillé.";
+
+    /* --- bandeau des piliers --- */
+    $('#pillars').innerHTML = PILLARS.map(function(p){
+      return '<button type="button" class="pillar" data-go="' + (p.go || '') + '"' + (p.soon ? ' data-soon="1"' : '') + '>' +
+        '<span class="pic" style="background:' + p.c + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p.i + '</svg>' +
+        '</span>' +
+        '<b>' + esc(p.t) + '</b><span>' + esc(p.d) + '</span>' +
+        (p.soon ? '<span class="soon">Bientôt</span>' : '') +
+      '</button>';
+    }).join('');
+
+    /* --- cartes de parcours --- */
+    $('#pathGrid').innerHTML = PATHS.map(function(p){
+      return '<button type="button" class="path-card" data-go="' + (p.go || '') + '"' + (p.soon ? ' data-soon="1"' : '') + '>' +
+        '<span class="path-thumb" style="background:linear-gradient(140deg,' + p.c1 + ',' + p.c2 + ')">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p.i + '</svg>' +
+          (p.soon ? '<span class="soon">Bientôt</span>' : '') +
+        '</span>' +
+        '<span class="path-body"><b>' + esc(p.t) + '</b><span>' + esc(p.d) + '</span>' +
+          '<span class="path-go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>' +
+        '</span>' +
+      '</button>';
+    }).join('');
+
+    /* --- chiffres : uniquement des valeurs vérifiables dans le code --- */
+    var totalQ = TS.totalExercises() + 200 + 100;   // exercices + devoirs + examens finaux
+    $('#statsBand').innerHTML = [
+      ['40', 'modules de cours'],
+      [String(totalQ), 'exercices et questions corrigés'],
+      ['5', 'niveaux, du A1 au C1'],
+      ['30', 'devoirs et compositions']
+    ].map(function(x){
+      return '<div class="stat-real"><b>' + x[0] + '</b><span>' + x[1] + '</span></div>';
+    }).join('');
+
+    heroAvatar();
 
     $('#statGrid').innerHTML =
       statCard('Modules terminés', g.done + ' / ' + g.modules, 'Chaque module = leçon + exercices corrigés', g.percent) +
@@ -338,19 +416,49 @@ window.FA = (function(){
       });
     });
   }
+  /* L'avatar 3D vient se poser dans le hero. Un seul contexte WebGL
+     pour tout le site : on déplace le canvas au lieu d'en recréer un. */
+  var heroTried = false;
+  function heroAvatar(){
+    var box = $('#heroAvatar');
+    if(!box || !window.ShineAvatar) return;
+    if(!ShineAvatar.supported()){ box.parentNode.classList.add('no-3d'); return; }
+    if(ShineAvatar.isReady()){ ShineAvatar.attachTo(box); return; }
+    if(heroTried) return;
+    heroTried = true;
+    box.parentNode.classList.add('loading-3d');
+    ShineAvatar.mount(box)
+      .then(function(){ box.parentNode.classList.remove('loading-3d'); })
+      .catch(function(){
+        heroTried = false;
+        box.parentNode.classList.remove('loading-3d');
+        box.parentNode.classList.add('no-3d');
+      });
+  }
+
   function statCard(k, v, s, pct){
     return '<div class="stat-card"><div class="k">' + k + '</div><div class="v">' + v + '</div>' +
            '<div class="s">' + s + '</div>' +
            '<div class="ring-track"><div class="ring-fill" style="width:' + Math.max(0, Math.min(100, pct || 0)) + '%"></div></div></div>';
   }
 
-  $('#goResume').addEventListener('click', function(){
-    var id = state.lastModule || (TS.modulesOf(state.level || 'A1')[0] || {}).id;
-    if(id) openLesson(id); else { renderModules(); showView('view-courses'); }
+  /* Boutons de la page d'accueil (délégation : le contenu est reconstruit). */
+  document.addEventListener('click', function(ev){
+    var el = ev.target.closest && ev.target.closest('[data-go]');
+    if(el && el.closest('#view-home')){
+      if(el.dataset.soon === '1'){
+        TS.toast("« " + (el.querySelector('b') ? el.querySelector('b').textContent : 'Ce module') + " » n'est pas encore disponible.");
+        return;
+      }
+      if(el.dataset.go) goTarget(el.dataset.go);
+      return;
+    }
+    if(ev.target.closest && ev.target.closest('#heroStart')){
+      var id = state.lastModule || (TS.modulesOf(state.level || 'A1')[0] || {}).id;
+      if(id) openLesson(id); else { renderModules(); showView('view-courses'); }
+    }
+    if(ev.target.closest && ev.target.closest('#coachMic')){ goTarget('shine'); }
   });
-  $('#goShine').addEventListener('click', function(){ Shine.render(''); showView('view-shine'); });
-  $('#goRooms').addEventListener('click', function(){ renderRooms(); showView('view-exams'); });
-  $('#goTest').addEventListener('click', function(){ startPlacement(); showView('view-test'); });
 
   /* =======================================================
      COURS

@@ -179,10 +179,14 @@
     <button class="nav-btn active" data-target="view-home">Accueil</button>
     <button class="nav-btn" data-target="view-courses">Cours</button>
     <button class="nav-btn" data-target="view-shine">SHINE AI</button>
-    <button class="nav-btn" data-target="view-exams">Salle d'examen</button>
-    <button class="nav-btn" data-target="view-test">Test de niveau</button>
+    <button class="nav-btn" data-target="view-exams">Examens</button>
+    <button class="nav-btn" data-target="view-test">Progression</button>
   </nav>
   <div class="header-right">
+    <button class="bell" id="bellBtn" aria-label="Notifications" title="Notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span class="bell-dot" id="bellDot" hidden></span>
+    </button>
     <span class="hello-chip" id="helloChip">Bonjour 👋</span>
     <span class="level-mini">Niveau <b id="levelMini">—</b></span>
     <a class="wa-quick" href="https://wa.me/221782239495" target="_blank" rel="noopener">
@@ -197,29 +201,91 @@
 
 <!-- ============================ ACCUEIL ============================ -->
 <section id="view-home" class="view">
-  <div class="shell">
-    <div class="dash-hero">
-      <div class="eyebrow" style="color:var(--gold-2);">TON ESPACE</div>
-      <h2 id="homeTitle">Bonjour 👋</h2>
-      <p id="homeSub">Tous les niveaux, tous les cours et toutes les salles d'examen sont ouverts. Commence où tu veux, avance à ton rythme.</p>
-      <div class="dash-actions">
-        <button class="btn-gold-sm" id="goResume">Reprendre mon cours</button>
-        <button class="btn-ghost-light" id="goRooms">Entrer en salle d'examen</button>
-        <button class="btn-ghost-light" id="goShine">🎙️ Parler avec SHINE</button>
-        <button class="btn-ghost-light" id="goTest">Refaire le test de niveau</button>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <h1>Apprends l'anglais<br>avec <span class="hero-brand">Talk &amp; Shine</span></h1>
+        <p class="hero-sub">Ton coach IA, tes cours interactifs, des situations réelles
+          et un accompagnement personnalisé.<br>
+          <b class="hero-punch">Booste ton anglais, ouvre ton avenir !</b></p>
+        <div class="hero-cta">
+          <button class="btn-hero" id="heroStart">Commencer maintenant
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <div class="hero-badges">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg> 100 % en ligne</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg> IA conversationnelle</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg> Pensé pour l'Afrique</span>
+        </div>
+      </div>
+      <div class="hero-avatar">
+        <div class="hero-3d" id="heroAvatar"></div>
+        <div class="hero-bubble">Hi! I'm SHINE<br><span>Your English teacher and AI friend!</span></div>
       </div>
     </div>
+  </div>
 
-    <div class="stat-grid" id="statGrid"></div>
+  <!-- BANDEAU DES 6 PILIERS -->
+  <div class="pillars" id="pillars"></div>
 
+  <div class="shell">
+    <!-- PARCOURS -->
     <div class="section-head">
       <div>
-        <h2>Ton parcours niveau par niveau</h2>
-        <p>Chaque niveau contient 8 modules de cours, 4 devoirs, 2 compositions et un examen final.</p>
+        <h2>Choisis ton parcours</h2>
+        <p>Des modules adaptés à tes besoins et à ton niveau.</p>
       </div>
     </div>
+    <div class="path-layout">
+      <div class="path-grid" id="pathGrid"></div>
+
+      <!-- PANNEAU COACH IA -->
+      <aside class="coach-card">
+        <h3>Ta coach IA<br>toujours avec toi</h3>
+        <p>Parle, écoute, progresse. <b>SHINE est là pour t'accompagner chaque jour.</b></p>
+        <ul class="coach-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v4"/></svg> Conversation vocale</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Correction en temps réel</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg> Adaptation à ton niveau</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Conseils personnalisés</li>
+        </ul>
+        <button class="coach-mic" id="coachMic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v4"/></svg>
+          Parler avec SHINE
+        </button>
+      </aside>
+    </div>
+
+    <!-- CHIFFRES RÉELS -->
+    <div class="stats-band" id="statsBand"></div>
+
+    <!-- PROGRESSION -->
+    <div class="section-head" style="margin-top:34px;">
+      <div>
+        <h2>Ta progression</h2>
+        <p>Tout est ouvert : les cinq niveaux, du A1 au C1.</p>
+      </div>
+    </div>
+    <div class="stat-grid" id="statGrid"></div>
     <div class="module-grid scene" id="levelGrid"></div>
   </div>
+
+  <footer class="site-footer">
+    <div class="foot-inner">
+      <div class="foot-brand">
+        <img src="assets/logo.jpg" alt="Talk &amp; Shine">
+        <div><b>Talk &amp; Shine</b><span>Speak English. Build Your Future.</span></div>
+      </div>
+      <nav class="foot-links">
+        <a href="https://wa.me/221782239495" target="_blank" rel="noopener">Contact</a>
+        <a href="https://whatsapp.com/channel/0029Vb82wT62ZjCkdgLhfn2Q" target="_blank" rel="noopener">Chaîne WhatsApp</a>
+      </nav>
+      <p class="foot-legal">Talk &amp; Shine © 2026. Tous droits réservés.</p>
+    </div>
+  </footer>
 </section>
 
 <!-- ============================ TEST DE NIVEAU ============================ -->
@@ -327,6 +393,7 @@
 <script src="js/background.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/services/shine-live.js"></script>
+<script src="js/services/shine-avatar.js"></script>
 <script src="js/shine.js"></script>
 <script src="js/app.js"></script>
 </body>

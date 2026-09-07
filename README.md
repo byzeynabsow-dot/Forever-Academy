@@ -90,6 +90,20 @@ Garde-fous de coût : 12 sessions par heure et par IP, fermeture automatique apr
 
 Sans clé, SHINE affiche « SHINE vocal n'est pas encore configuré sur ce site » — aucun bouton ne fait semblant de fonctionner.
 
+### L'avatar 3D
+
+Le modèle `assets/3d/shine.glb` (3,3 Mo, Avaturn) est rendu avec three.js, **servi par le site lui-même** (`vendor/three/`) et non par un CDN : l'avatar s'affiche même quand la connexion est mauvaise ou qu'un CDN est bloqué.
+
+Un seul contexte WebGL pour tout le site : le canvas est déplacé entre la page d'accueil et la page SHINE au lieu d'être recréé. Le rendu se met en pause quand l'avatar sort de l'écran.
+
+**Ce que le modèle permet, et ce qu'il ne permet pas.** Ce fichier contient 52 os et une animation « idle », mais **aucune morph target et aucun os de mâchoire**. Donc :
+
+- ✅ tête, nuque et buste animés au rythme de l'amplitude réelle de la voix
+- ✅ postures distinctes selon l'état (écoute, réflexion, parole)
+- ❌ **aucune animation de bouche possible** — ni lip-sync phonétique, ni même une ouverture simple
+
+Pour obtenir un vrai lip-sync, il faut réexporter l'avatar **avec les blend shapes de visèmes** (Avaturn et Ready Player Me proposent tous deux l'option « ARKit blendshapes » à l'export). Le code est déjà prêt à les exploiter : `ShineAvatar.canLipSync()` renvoie `false` aujourd'hui et pourra être branché sur les morph targets le jour où le modèle en contient.
+
 ### Ce qui est réellement implémenté
 
 | Fonction | État |
