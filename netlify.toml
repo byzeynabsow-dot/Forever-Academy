@@ -7,11 +7,7 @@
 [functions]
   node_bundler = "esbuild"
 
-# La fabrique de jetons est appelée par le navigateur sur /api/token
-[[redirects]]
-  from = "/api/token"
-  to = "/.netlify/functions/gemini-token"
-  status = 200
+# Le chemin /api/token est déclaré dans la fonction elle-même (export const config).
 
 [[headers]]
   for = "/*"
