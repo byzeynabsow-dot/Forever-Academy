@@ -1,0 +1,14 @@
+{
+  "name": "talk-and-shine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Talk & Shine — apprentissage de l'anglais A1 à C1, avec SHINE (Gemini Live).",
+  "type": "module",
+  "scripts": {
+    "build:standalone": "python3 tools/build-standalone.py",
+    "check:secrets": "python3 tools/check-no-secrets.py"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

@@ -1,6 +1,6 @@
 /* =========================================================
    Forever Academy — authentification
-   • email + mot de passe (compte local, chiffré en base64)
+   • email + mot de passe (compte local, empreinte PBKDF2-SHA256)
    • Google Identity Services (réel si googleClientId renseigné)
    • Sign in with Apple (réel si appleClientId renseigné)
    • mode invité
@@ -113,8 +113,21 @@
   function enter(){ if(window.FA && FA.afterAuth) FA.afterAuth(); }
 
   /* ---------------- email / mot de passe ---------------- */
-  $('#authForm').addEventListener('submit', function(e){
+  /* Petit ralentisseur : après plusieurs échecs sur un même email, on
+     impose une attente. Cela rend le tâtonnement de mot de passe pénible
+     même si quelqu'un met la main sur l'appareil. */
+  var failures = {};
+  function lockedFor(email){
+    var f = failures[email];
+    if(!f || f.count < 5) return 0;
+    var wait = Math.min(60000, 1000 * Math.pow(2, f.count - 5));
+    return Math.max(0, f.at + wait - Date.now());
+  }
+
+  var busy = false;
+  $('#authForm').addEventListener('submit', async function(e){
     e.preventDefault();
+    if(busy) return;
     var okE = checkEmail(), okP = checkPass();
     var email = elEmail.value.trim().toLowerCase();
     var db = TS.loadDB();
@@ -123,27 +136,56 @@
       var okN = checkName(), ok2 = checkPass2();
       if(!(okN && okE && okP && ok2)){ TS.toast('Vérifie les champs en rouge.', 'err'); return; }
       if(db[email]){ setFieldState('fEmail', false, 'Un compte existe déjà avec cet email. Connecte-toi.'); return; }
-      db[email] = { name: elName.value.trim(), email: email, pass: TS.scramble(elPass.value),
-                    provider:'local', level:'', progress:{}, devoirs:{}, compos:{}, finals:{}, lastModule:'' };
-      TS.saveDB(db);
-      TS.loadUser(db[email]);
-      TS.setSession(email, $('#remember').checked);
-      TS.toast('Bienvenue ' + state.name + ' ! Ton compte est créé.', 'ok');
-      enter();
+      busy = true;
+      try{
+        var pw = await TS.makePasswordRecord(elPass.value);
+        db[email] = { name: elName.value.trim(), email: email, pw: pw,
+                      provider:'local', level:'', progress:{}, devoirs:{}, compos:{}, finals:{}, lastModule:'' };
+        TS.saveDB(db);
+        TS.loadUser(db[email]);
+        TS.setSession(email, $('#remember').checked);
+        TS.toast('Bienvenue ' + state.name + ' ! Ton compte est créé.', 'ok');
+        enter();
+      } finally { busy = false; }
       return;
     }
 
     if(!(okE && okP)){ TS.toast('Vérifie les champs en rouge.', 'err'); return; }
     var u = db[email];
     if(!u){ setFieldState('fEmail', false, "Aucun compte avec cet email. Crée un compte, c'est gratuit."); return; }
-    if(u.pass && u.pass !== TS.scramble(elPass.value)){
-      setFieldState('fPass', false, 'Mot de passe incorrect. Réessaie ou utilise « Mot de passe oublié ».');
+
+    var wait = lockedFor(email);
+    if(wait > 0){
+      setFieldState('fPass', false, 'Trop de tentatives. Réessaie dans ' + Math.ceil(wait / 1000) + ' secondes.');
       return;
     }
-    TS.loadUser(u);
-    TS.setSession(email, $('#remember').checked);
-    TS.toast('Content de te revoir, ' + state.name + ' !', 'ok');
-    enter();
+
+    busy = true;
+    try{
+      var res = await TS.verifyPassword(elPass.value, u);
+      if(res.noCrypto){
+        setFieldState('fPass', false, "Ce compte a été créé sur une page sécurisée (https). Ouvre le site en https pour t'y connecter.");
+        return;
+      }
+      if(!res.ok){
+        var f = failures[email] || { count: 0 };
+        f.count++; f.at = Date.now(); failures[email] = f;
+        setFieldState('fPass', false, 'Mot de passe incorrect. Réessaie ou utilise « Mot de passe oublié ».');
+        return;
+      }
+      delete failures[email];
+      /* Ancien compte encodé en base64 : on le rehache maintenant qu'on
+         connaît le mot de passe en clair, le temps d'une session. */
+      if(res.upgrade){
+        u.pw = await TS.makePasswordRecord(elPass.value);
+        delete u.pass;
+        db[email] = u; TS.saveDB(db);
+      }
+      TS.loadUser(u);
+      TS.setSession(email, $('#remember').checked);
+      TS.toast('Content de te revoir, ' + state.name + ' !', 'ok');
+      enter();
+    } finally { busy = false; }
   });
 
   $('#guestBtn').addEventListener('click', function(){
@@ -161,8 +203,11 @@
     var np = prompt('Choisis un nouveau mot de passe (6 caractères minimum) :');
     if(np === null) return;
     if(np.length < 6){ TS.toast('Mot de passe trop court.', 'err'); return; }
-    db[email].pass = TS.scramble(np); TS.saveDB(db);
-    TS.toast('Mot de passe mis à jour. Connecte-toi.', 'ok');
+    TS.makePasswordRecord(np).then(function(pw){
+      db[email].pw = pw; delete db[email].pass;
+      TS.saveDB(db);
+      TS.toast('Mot de passe mis à jour. Connecte-toi.', 'ok');
+    });
   });
 
   /* ---------------- connexion par fournisseur ---------------- */

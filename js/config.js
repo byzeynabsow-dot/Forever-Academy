@@ -15,13 +15,14 @@ window.TS_CONFIG = {
        La page demande un jeton court à /api/token, fourni par un petit
        serveur qui garde ta clé. Personne ne peut voler la clé.
 
-     MODE 2 (simple, mais la clé est publique) : colle ta clé ci-dessous.
-       Le site fonctionne sans aucun serveur — mais TOUTE personne qui
-       ouvre le code source de la page peut lire cette clé et s'en servir
-       à tes frais. À réserver à un site privé, à une démonstration, ou
-       à une clé dont tu surveilles le quota de près.
+     MODE 2 (TEST LOCAL UNIQUEMENT) : colle ta clé ci-dessous.
+       Fonctionne sans serveur, mais la clé devient PUBLIQUE : toute
+       personne qui ouvre le code source de la page peut la lire et s'en
+       servir à tes frais. Ne jamais mettre en ligne dans cet état.
+       tools/check-no-secrets.py refuse d'ailleurs une livraison si ce
+       champ est renseigné.
      ===================================================================== */
-  geminiApiKey: '',                                   // ← MODE 2 : ta clé AIza… ici
+  geminiApiKey: '',                                   // ← laisser VIDE en production
   geminiLiveModel: 'gemini-3.1-flash-live-preview',
   tokenEndpoint: '/api/token',                        // ← MODE 1 : adresse du serveur
 

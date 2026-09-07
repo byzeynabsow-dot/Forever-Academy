@@ -82,6 +82,37 @@ La consigne pédagogique (niveau CECRL, façon de corriger, sujet de la leçon) 
 
 Garde-fous de coût : 12 sessions par heure et par IP, fermeture automatique après 90 s de silence, plafond dur de 10 minutes par session.
 
+### Sécurité
+
+Le projet est réglé pour que **la clé ne quitte jamais le serveur**.
+
+| Protection | Comment |
+|---|---|
+| Clé jamais exposée | lue par `Netlify.env.get()` dans la fonction ; jamais journalisée, jamais renvoyée, absente du code du site |
+| Jeton à durée de vie courte | usage unique, 1 min pour ouvrir la session, 10 min au plus pour parler |
+| Consigne verrouillée | le rôle de SHINE est écrit côté serveur et scellé dans le jeton : le navigateur ne peut pas le détourner |
+| Endpoint réservé au site | contrôle de l'origine ; un autre site ne peut pas brancher son interface dessus |
+| Anti-rafale | 12 sessions par heure et par adresse IP |
+| Plafond quotidien | compteur partagé dans Netlify Blobs : même en changeant d'IP, le total du jour est borné |
+| Corps de requête borné | 4 Ko maximum |
+| Mots de passe | empreinte PBKDF2-SHA256, 150 000 itérations, sel aléatoire par compte — le mot de passe n'est jamais stocké |
+| Tentatives répétées | ralentissement exponentiel après 5 échecs, jusqu'à une minute d'attente |
+| En-têtes | CSP en liste blanche, HSTS, `frame-ancestors 'none'`, micro limité à notre origine, caméra et géolocalisation refusées |
+| Contrôle avant livraison | `npm run check:secrets` refuse toute clé présente dans les fichiers du site |
+
+**Ce que cela ne remplace pas.** Les comptes vivent dans le navigateur : il n'y a pas d'authentification vérifiable côté serveur. `/api/token` est donc protégé par des quotas, pas par une identité. Pour réserver SHINE à des élèves inscrits, il faudra de vrais comptes serveur — c'est le prochain palier.
+
+Variables d'environnement reconnues :
+
+| Nom | Rôle | Défaut |
+|---|---|---|
+| `GEMINI_API_KEY` | la clé, format `AIza…` | — (obligatoire) |
+| `GEMINI_LIVE_MODEL` | modèle Live | `gemini-3.1-flash-live-preview` |
+| `GEMINI_API_VERSION` | version servant les jetons | `v1alpha` |
+| `GEMINI_TOKENS_PER_HOUR` | plafond par IP | `12` |
+| `GEMINI_TOKENS_PER_DAY` | plafond global du jour | `200` |
+| `ALLOWED_ORIGINS` | origines autorisées, séparées par des virgules | l'URL du site |
+
 ### Ce qu'il faut pour l'activer
 
 1. Une clé Gemini au format `AIza…` — **une clé `AQ.…` est refusée par l'API** (`401 ACCESS_TOKEN_TYPE_UNSUPPORTED`).

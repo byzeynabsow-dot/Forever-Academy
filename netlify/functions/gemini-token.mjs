@@ -13,11 +13,11 @@ const API_HOST = 'https://generativelanguage.googleapis.com';
 const SESSION_START_WINDOW_MS = 60 * 1000;   // ouvrir la session : 1 min
 const SESSION_MAX_MS = 10 * 60 * 1000;       // parler : 10 min au plus
 
-/* Garde-fou anti-abus, en mémoire de l'instance. Netlify peut lancer
-   plusieurs instances en parallèle : cela limite les rafales, ce n'est
-   pas un quota comptable. */
+/* --- Garde-fou 1 : rafales par adresse IP -------------------------------
+   En mémoire de l'instance. Netlify peut en lancer plusieurs en parallèle :
+   cela casse les rafales, ce n'est pas un quota comptable. */
 let hits;
-function rateLimited(ip, max) {
+function burstLimited(ip, max) {
   if (!hits) hits = new Map();
   const now = Date.now();
   const windowMs = 60 * 60 * 1000;
@@ -29,6 +29,50 @@ function rateLimited(ip, max) {
   return false;
 }
 
+/* --- Garde-fou 2 : plafond global de la journée -------------------------
+   Compteur partagé par toutes les instances, stocké dans Netlify Blobs.
+   C'est lui qui protège réellement la facture : même en changeant d'IP,
+   personne ne peut dépasser le total quotidien.
+   Si Blobs est indisponible, on ne bloque pas le service : on le signale
+   et on retombe sur le seul garde-fou par IP. */
+async function dailyBudgetExceeded(max) {
+  let store;
+  try {
+    const { getStore } = await import('@netlify/blobs');
+    store = getStore('shine-quota');
+  } catch {
+    return { exceeded: false, degraded: true };
+  }
+  const day = new Date().toISOString().slice(0, 10);   // AAAA-MM-JJ, UTC
+  try {
+    const raw = await store.get(day);
+    const used = Number(raw) || 0;
+    if (used >= max) return { exceeded: true, used, max };
+    await store.set(day, String(used + 1));
+    return { exceeded: false, used: used + 1, max };
+  } catch {
+    return { exceeded: false, degraded: true };
+  }
+}
+
+/* --- Garde-fou 3 : seules nos propres pages peuvent appeler ------------
+   Empêche un autre site de brancher son interface sur notre endpoint.
+   Ce n'est pas une authentification (un en-tête se falsifie hors
+   navigateur), mais cela ferme l'abus le plus courant. */
+function originAllowed(req) {
+  const allow = (Netlify.env.get('ALLOWED_ORIGINS') || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const origin = req.headers.get('origin') || '';
+  const referer = req.headers.get('referer') || '';
+  if (!allow.length) {
+    // Rien de configuré : on accepte l'origine du site lui-même.
+    const self = Netlify.env.get('URL') || '';
+    if (!self) return true;
+    return !origin || origin === self || referer.startsWith(self);
+  }
+  if (origin) return allow.includes(origin);
+  return allow.some((o) => referer.startsWith(o));
+}
+
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -38,6 +82,14 @@ function json(body, status = 200) {
 
 export default async (req, context) => {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+
+  if (!originAllowed(req)) {
+    return json({ error: 'origin_refused', message: "Cette page n'est pas autorisée à ouvrir une session vocale." }, 403);
+  }
+
+  /* Corps borné : rien à traiter au-delà de quelques kilo-octets. */
+  const declared = Number(req.headers.get('content-length') || 0);
+  if (declared > 4096) return json({ error: 'payload_too_large' }, 413);
 
   const apiKey = Netlify.env.get('GEMINI_API_KEY');
   if (!apiKey) {
@@ -51,18 +103,31 @@ export default async (req, context) => {
   const apiVersion = Netlify.env.get('GEMINI_API_VERSION') || 'v1alpha';
   const maxPerHour = Number(Netlify.env.get('GEMINI_TOKENS_PER_HOUR') || 12);
 
+  const maxPerDay = Number(Netlify.env.get('GEMINI_TOKENS_PER_DAY') || 200);
+
   const ip = context?.ip || req.headers.get('x-nf-client-connection-ip') || 'inconnu';
-  if (rateLimited(ip, maxPerHour)) {
+  if (burstLimited(ip, maxPerHour)) {
     return json({
       error: 'rate_limited',
       message: `Limite atteinte : ${maxPerHour} sessions vocales par heure. Réessaie plus tard.`
     }, 429);
   }
 
+  const budget = await dailyBudgetExceeded(maxPerDay);
+  if (budget.exceeded) {
+    return json({
+      error: 'daily_budget_reached',
+      message: "Le nombre de sessions vocales prévu pour aujourd'hui est atteint. SHINE revient demain."
+    }, 429);
+  }
+
   /* La consigne pédagogique est construite ici, côté serveur, puis
      verrouillée dans le jeton : le navigateur ne peut pas la détourner. */
   let profile = {};
-  try { profile = await req.json(); } catch { profile = {}; }
+  try {
+    const body = await req.text();
+    if (body.length <= 4096) profile = JSON.parse(body);
+  } catch { profile = {}; }
 
   const now = Date.now();
   const payload = {

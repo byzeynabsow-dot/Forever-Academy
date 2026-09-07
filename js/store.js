@@ -19,7 +19,82 @@ window.TS = (function(){
   function safeParse(raw, fb){ try{ return raw ? JSON.parse(raw) : fb; }catch(e){ return fb; } }
   function loadDB(){ try{ return safeParse(localStorage.getItem(DB_KEY), {}); }catch(e){ return {}; } }
   function saveDB(db){ try{ localStorage.setItem(DB_KEY, JSON.stringify(db)); }catch(e){} }
-  function scramble(txt){ try{ return btoa(unescape(encodeURIComponent('fa::' + txt))); }catch(e){ return 'fa::' + txt; } }
+  /* ---------- mots de passe ----------
+     Les comptes vivent dans le navigateur : il n'y a pas de serveur pour
+     les vérifier. On stocke donc une empreinte PBKDF2-SHA256 (150 000
+     itérations, sel aléatoire par compte) et jamais le mot de passe.
+     Quelqu'un qui lit le stockage de l'appareil ne peut pas le relire.
+
+     Web Crypto exige une origine sûre (https ou localhost). Ouvert en
+     fichier local, on retombe sur l'ancien encodage — sécurité moindre,
+     signalée par le champ `weak`. */
+  var PBKDF2_ITER = 150000;
+
+  function hasSubtle(){
+    return !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
+  }
+  function toHex(buf){
+    return Array.prototype.map.call(new Uint8Array(buf), function(b){
+      return ('0' + b.toString(16)).slice(-2);
+    }).join('');
+  }
+  function fromHex(hex){
+    var out = new Uint8Array(hex.length / 2);
+    for(var i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+    return out;
+  }
+  function legacyScramble(txt){
+    try{ return btoa(unescape(encodeURIComponent('fa::' + txt))); }catch(e){ return 'fa::' + txt; }
+  }
+
+  function derive(password, salt, iter){
+    return window.crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
+    ).then(function(key){
+      return window.crypto.subtle.deriveBits(
+        { name:'PBKDF2', salt: salt, iterations: iter, hash: 'SHA-256' }, key, 256
+      );
+    });
+  }
+
+  /* Fabrique l'enregistrement à stocker pour un nouveau mot de passe. */
+  function makePasswordRecord(password){
+    if(!hasSubtle()){
+      return Promise.resolve({ weak: true, legacy: legacyScramble(password) });
+    }
+    var salt = window.crypto.getRandomValues(new Uint8Array(16));
+    return derive(password, salt, PBKDF2_ITER).then(function(bits){
+      return { alg:'PBKDF2-SHA256', iter: PBKDF2_ITER, salt: toHex(salt), hash: toHex(bits) };
+    });
+  }
+
+  /* Vérifie un mot de passe contre l'enregistrement stocké.
+     Accepte les anciens comptes en base64 pour ne perdre personne :
+     ils sont réencodés au premier login réussi. */
+  function verifyPassword(password, user){
+    var rec = user && user.pw;
+    if(!rec){
+      // compte créé avant cette version : champ `pass` en base64
+      if(user && user.pass) return Promise.resolve({ ok: user.pass === legacyScramble(password), upgrade: true });
+      return Promise.resolve({ ok: false });
+    }
+    if(rec.weak || !rec.hash){
+      return Promise.resolve({ ok: rec.legacy === legacyScramble(password), upgrade: hasSubtle() });
+    }
+    if(!hasSubtle()) return Promise.resolve({ ok: false, noCrypto: true });
+    return derive(password, fromHex(rec.salt), rec.iter || PBKDF2_ITER).then(function(bits){
+      return { ok: timingSafeEqual(toHex(bits), rec.hash) };
+    });
+  }
+
+  /* Comparaison à durée constante : on ne veut pas qu'un attaquant
+     déduise le préfixe correct à partir du temps de réponse. */
+  function timingSafeEqual(a, b){
+    if(typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+    var diff = 0;
+    for(var i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return diff === 0;
+  }
 
   var state = blankState();
   function blankState(){
@@ -186,7 +261,8 @@ window.TS = (function(){
       var b = blankState();
       Object.keys(b).forEach(function(k){ state[k] = b[k]; });
     },
-    persist: persist, loadUser: loadUser, loadDB: loadDB, saveDB: saveDB, scramble: scramble,
+    persist: persist, loadUser: loadUser, loadDB: loadDB, saveDB: saveDB,
+    makePasswordRecord: makePasswordRecord, verifyPassword: verifyPassword, hasSubtle: hasSubtle,
     setSession: setSession, clearSession: clearSession, readSession: readSession, readGuestCache: readGuestCache,
     toast: toast, normalize: normalize, answerMatches: answerMatches, countWords: countWords,
     levels: levels, modulesOf: modulesOf, allModules: allModules, moduleById: moduleById,

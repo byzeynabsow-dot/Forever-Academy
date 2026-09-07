@@ -29,13 +29,14 @@ window.TS_CONFIG = {
        La page demande un jeton court à /api/token, fourni par un petit
        serveur qui garde ta clé. Personne ne peut voler la clé.
 
-     MODE 2 (simple, mais la clé est publique) : colle ta clé ci-dessous.
-       Le site fonctionne sans aucun serveur — mais TOUTE personne qui
-       ouvre le code source de la page peut lire cette clé et s'en servir
-       à tes frais. À réserver à un site privé, à une démonstration, ou
-       à une clé dont tu surveilles le quota de près.
+     MODE 2 (TEST LOCAL UNIQUEMENT) : colle ta clé ci-dessous.
+       Fonctionne sans serveur, mais la clé devient PUBLIQUE : toute
+       personne qui ouvre le code source de la page peut la lire et s'en
+       servir à tes frais. Ne jamais mettre en ligne dans cet état.
+       tools/check-no-secrets.py refuse d'ailleurs une livraison si ce
+       champ est renseigné.
      ===================================================================== */
-  geminiApiKey: '',                                   // ← MODE 2 : ta clé AIza… ici
+  geminiApiKey: '',                                   // ← laisser VIDE en production
   geminiLiveModel: 'gemini-3.1-flash-live-preview',
   tokenEndpoint: '/api/token',                        // ← MODE 1 : adresse du serveur
 
@@ -3873,7 +3874,82 @@ window.TS = (function(){
   function safeParse(raw, fb){ try{ return raw ? JSON.parse(raw) : fb; }catch(e){ return fb; } }
   function loadDB(){ try{ return safeParse(localStorage.getItem(DB_KEY), {}); }catch(e){ return {}; } }
   function saveDB(db){ try{ localStorage.setItem(DB_KEY, JSON.stringify(db)); }catch(e){} }
-  function scramble(txt){ try{ return btoa(unescape(encodeURIComponent('fa::' + txt))); }catch(e){ return 'fa::' + txt; } }
+  /* ---------- mots de passe ----------
+     Les comptes vivent dans le navigateur : il n'y a pas de serveur pour
+     les vérifier. On stocke donc une empreinte PBKDF2-SHA256 (150 000
+     itérations, sel aléatoire par compte) et jamais le mot de passe.
+     Quelqu'un qui lit le stockage de l'appareil ne peut pas le relire.
+
+     Web Crypto exige une origine sûre (https ou localhost). Ouvert en
+     fichier local, on retombe sur l'ancien encodage — sécurité moindre,
+     signalée par le champ `weak`. */
+  var PBKDF2_ITER = 150000;
+
+  function hasSubtle(){
+    return !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
+  }
+  function toHex(buf){
+    return Array.prototype.map.call(new Uint8Array(buf), function(b){
+      return ('0' + b.toString(16)).slice(-2);
+    }).join('');
+  }
+  function fromHex(hex){
+    var out = new Uint8Array(hex.length / 2);
+    for(var i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+    return out;
+  }
+  function legacyScramble(txt){
+    try{ return btoa(unescape(encodeURIComponent('fa::' + txt))); }catch(e){ return 'fa::' + txt; }
+  }
+
+  function derive(password, salt, iter){
+    return window.crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
+    ).then(function(key){
+      return window.crypto.subtle.deriveBits(
+        { name:'PBKDF2', salt: salt, iterations: iter, hash: 'SHA-256' }, key, 256
+      );
+    });
+  }
+
+  /* Fabrique l'enregistrement à stocker pour un nouveau mot de passe. */
+  function makePasswordRecord(password){
+    if(!hasSubtle()){
+      return Promise.resolve({ weak: true, legacy: legacyScramble(password) });
+    }
+    var salt = window.crypto.getRandomValues(new Uint8Array(16));
+    return derive(password, salt, PBKDF2_ITER).then(function(bits){
+      return { alg:'PBKDF2-SHA256', iter: PBKDF2_ITER, salt: toHex(salt), hash: toHex(bits) };
+    });
+  }
+
+  /* Vérifie un mot de passe contre l'enregistrement stocké.
+     Accepte les anciens comptes en base64 pour ne perdre personne :
+     ils sont réencodés au premier login réussi. */
+  function verifyPassword(password, user){
+    var rec = user && user.pw;
+    if(!rec){
+      // compte créé avant cette version : champ `pass` en base64
+      if(user && user.pass) return Promise.resolve({ ok: user.pass === legacyScramble(password), upgrade: true });
+      return Promise.resolve({ ok: false });
+    }
+    if(rec.weak || !rec.hash){
+      return Promise.resolve({ ok: rec.legacy === legacyScramble(password), upgrade: hasSubtle() });
+    }
+    if(!hasSubtle()) return Promise.resolve({ ok: false, noCrypto: true });
+    return derive(password, fromHex(rec.salt), rec.iter || PBKDF2_ITER).then(function(bits){
+      return { ok: timingSafeEqual(toHex(bits), rec.hash) };
+    });
+  }
+
+  /* Comparaison à durée constante : on ne veut pas qu'un attaquant
+     déduise le préfixe correct à partir du temps de réponse. */
+  function timingSafeEqual(a, b){
+    if(typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+    var diff = 0;
+    for(var i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return diff === 0;
+  }
 
   var state = blankState();
   function blankState(){
@@ -4040,7 +4116,8 @@ window.TS = (function(){
       var b = blankState();
       Object.keys(b).forEach(function(k){ state[k] = b[k]; });
     },
-    persist: persist, loadUser: loadUser, loadDB: loadDB, saveDB: saveDB, scramble: scramble,
+    persist: persist, loadUser: loadUser, loadDB: loadDB, saveDB: saveDB,
+    makePasswordRecord: makePasswordRecord, verifyPassword: verifyPassword, hasSubtle: hasSubtle,
     setSession: setSession, clearSession: clearSession, readSession: readSession, readGuestCache: readGuestCache,
     toast: toast, normalize: normalize, answerMatches: answerMatches, countWords: countWords,
     levels: levels, modulesOf: modulesOf, allModules: allModules, moduleById: moduleById,
@@ -4131,7 +4208,7 @@ window.TS = (function(){
 /* ===== js/auth.js ===== */
 /* =========================================================
    Forever Academy — authentification
-   • email + mot de passe (compte local, chiffré en base64)
+   • email + mot de passe (compte local, empreinte PBKDF2-SHA256)
    • Google Identity Services (réel si googleClientId renseigné)
    • Sign in with Apple (réel si appleClientId renseigné)
    • mode invité
@@ -4244,8 +4321,21 @@ window.TS = (function(){
   function enter(){ if(window.FA && FA.afterAuth) FA.afterAuth(); }
 
   /* ---------------- email / mot de passe ---------------- */
-  $('#authForm').addEventListener('submit', function(e){
+  /* Petit ralentisseur : après plusieurs échecs sur un même email, on
+     impose une attente. Cela rend le tâtonnement de mot de passe pénible
+     même si quelqu'un met la main sur l'appareil. */
+  var failures = {};
+  function lockedFor(email){
+    var f = failures[email];
+    if(!f || f.count < 5) return 0;
+    var wait = Math.min(60000, 1000 * Math.pow(2, f.count - 5));
+    return Math.max(0, f.at + wait - Date.now());
+  }
+
+  var busy = false;
+  $('#authForm').addEventListener('submit', async function(e){
     e.preventDefault();
+    if(busy) return;
     var okE = checkEmail(), okP = checkPass();
     var email = elEmail.value.trim().toLowerCase();
     var db = TS.loadDB();
@@ -4254,27 +4344,56 @@ window.TS = (function(){
       var okN = checkName(), ok2 = checkPass2();
       if(!(okN && okE && okP && ok2)){ TS.toast('Vérifie les champs en rouge.', 'err'); return; }
       if(db[email]){ setFieldState('fEmail', false, 'Un compte existe déjà avec cet email. Connecte-toi.'); return; }
-      db[email] = { name: elName.value.trim(), email: email, pass: TS.scramble(elPass.value),
-                    provider:'local', level:'', progress:{}, devoirs:{}, compos:{}, finals:{}, lastModule:'' };
-      TS.saveDB(db);
-      TS.loadUser(db[email]);
-      TS.setSession(email, $('#remember').checked);
-      TS.toast('Bienvenue ' + state.name + ' ! Ton compte est créé.', 'ok');
-      enter();
+      busy = true;
+      try{
+        var pw = await TS.makePasswordRecord(elPass.value);
+        db[email] = { name: elName.value.trim(), email: email, pw: pw,
+                      provider:'local', level:'', progress:{}, devoirs:{}, compos:{}, finals:{}, lastModule:'' };
+        TS.saveDB(db);
+        TS.loadUser(db[email]);
+        TS.setSession(email, $('#remember').checked);
+        TS.toast('Bienvenue ' + state.name + ' ! Ton compte est créé.', 'ok');
+        enter();
+      } finally { busy = false; }
       return;
     }
 
     if(!(okE && okP)){ TS.toast('Vérifie les champs en rouge.', 'err'); return; }
     var u = db[email];
     if(!u){ setFieldState('fEmail', false, "Aucun compte avec cet email. Crée un compte, c'est gratuit."); return; }
-    if(u.pass && u.pass !== TS.scramble(elPass.value)){
-      setFieldState('fPass', false, 'Mot de passe incorrect. Réessaie ou utilise « Mot de passe oublié ».');
+
+    var wait = lockedFor(email);
+    if(wait > 0){
+      setFieldState('fPass', false, 'Trop de tentatives. Réessaie dans ' + Math.ceil(wait / 1000) + ' secondes.');
       return;
     }
-    TS.loadUser(u);
-    TS.setSession(email, $('#remember').checked);
-    TS.toast('Content de te revoir, ' + state.name + ' !', 'ok');
-    enter();
+
+    busy = true;
+    try{
+      var res = await TS.verifyPassword(elPass.value, u);
+      if(res.noCrypto){
+        setFieldState('fPass', false, "Ce compte a été créé sur une page sécurisée (https). Ouvre le site en https pour t'y connecter.");
+        return;
+      }
+      if(!res.ok){
+        var f = failures[email] || { count: 0 };
+        f.count++; f.at = Date.now(); failures[email] = f;
+        setFieldState('fPass', false, 'Mot de passe incorrect. Réessaie ou utilise « Mot de passe oublié ».');
+        return;
+      }
+      delete failures[email];
+      /* Ancien compte encodé en base64 : on le rehache maintenant qu'on
+         connaît le mot de passe en clair, le temps d'une session. */
+      if(res.upgrade){
+        u.pw = await TS.makePasswordRecord(elPass.value);
+        delete u.pass;
+        db[email] = u; TS.saveDB(db);
+      }
+      TS.loadUser(u);
+      TS.setSession(email, $('#remember').checked);
+      TS.toast('Content de te revoir, ' + state.name + ' !', 'ok');
+      enter();
+    } finally { busy = false; }
   });
 
   $('#guestBtn').addEventListener('click', function(){
@@ -4292,8 +4411,11 @@ window.TS = (function(){
     var np = prompt('Choisis un nouveau mot de passe (6 caractères minimum) :');
     if(np === null) return;
     if(np.length < 6){ TS.toast('Mot de passe trop court.', 'err'); return; }
-    db[email].pass = TS.scramble(np); TS.saveDB(db);
-    TS.toast('Mot de passe mis à jour. Connecte-toi.', 'ok');
+    TS.makePasswordRecord(np).then(function(pw){
+      db[email].pw = pw; delete db[email].pass;
+      TS.saveDB(db);
+      TS.toast('Mot de passe mis à jour. Connecte-toi.', 'ok');
+    });
   });
 
   /* ---------------- connexion par fournisseur ---------------- */
