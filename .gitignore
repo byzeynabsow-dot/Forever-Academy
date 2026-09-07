@@ -1,0 +1,11 @@
+# archives générées
+talkandshine-site.zip
+
+# secrets — ne jamais commiter
+.env
+.env.*
+!.env.example
+
+# dépendances
+node_modules/
+.netlify/
