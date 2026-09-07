@@ -1,5 +1,6 @@
-# archives générées
+# archives générées — reconstruites à la demande depuis les sources
 talkandshine-site.zip
+talkandshine-netlify.zip
 
 # secrets — ne jamais commiter
 .env
