@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tempête — Prologue</title>
+<meta name="description" content="Prologue jouable en 3D temps réel : une poursuite en vedette, de nuit, dans une tempête en haute mer. Hommage non officiel à la première mission d'Uncharted 4.">
+<meta name="theme-color" content="#05090c">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🌊</text></svg>">
+<style>
+  :root {
+    --ink: #e9eef2;
+    --dim: rgba(233, 238, 242, .62);
+    --accent: #e8c27a;
+    --danger: #e0574a;
+    --font: "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #05090c; color: var(--ink); font-family: var(--font); }
+  canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+
+  /* bandes cinéma */
+  .bars::before, .bars::after {
+    content: ""; position: fixed; left: 0; right: 0; height: 0; background: #000; z-index: 5;
+    transition: height .9s cubic-bezier(.6, 0, .2, 1);
+  }
+  .bars::before { top: 0; } .bars::after { bottom: 0; }
+  body.cinema.bars::before, body.cinema.bars::after { height: 11vh; }
+
+  /* HUD */
+  .hud { position: fixed; inset: 0; pointer-events: none; z-index: 6; opacity: 0; transition: opacity .6s; }
+  body.playing:not(.cinema) .hud { opacity: 1; }
+  #objective {
+    position: absolute; top: 34px; left: 40px; max-width: 420px;
+    font-size: 15px; letter-spacing: .02em; opacity: 0; transform: translateX(-12px);
+    text-shadow: 0 1px 3px rgba(0,0,0,.8);
+  }
+  #objective small { display: block; font-size: 11px; letter-spacing: .25em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  #objective.on { animation: obj 7s forwards; }
+  @keyframes obj { 0% { opacity: 0; transform: translateX(-12px); } 8%, 80% { opacity: 1; transform: none; } 100% { opacity: .55; transform: none; } }
+
+  #nav { position: absolute; top: 30px; right: 40px; text-align: right; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  #nav .row { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+  #compass { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--dim); position: relative; }
+  #compass::after { content: ""; position: absolute; left: 50%; top: 3px; margin-left: -5px; border: 5px solid transparent; border-bottom: 10px solid var(--accent); border-top: 0; }
+  #dist { font-size: 22px; font-weight: 300; font-variant-numeric: tabular-nums; }
+  #nav small { display: block; font-size: 11px; letter-spacing: .25em; text-transform: uppercase; color: var(--dim); margin-top: 4px; }
+  #speed { font-size: 12px; color: var(--dim); margin-top: 10px; font-variant-numeric: tabular-nums; }
+
+  #ammo { position: absolute; right: 44px; bottom: 40px; font-variant-numeric: tabular-nums; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  #ammo b { font-size: 34px; font-weight: 300; }
+  #ammo i { font-style: normal; font-size: 16px; color: var(--dim); margin-left: 6px; }
+  #ammo.low b { color: var(--danger); }
+  #reload { position: absolute; right: 44px; bottom: 32px; width: 90px; height: 2px; background: rgba(255,255,255,.15); }
+  #reloadBar { height: 100%; background: var(--ink); transform-origin: left; transform: scaleX(0); }
+
+  #crosshair { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; transition: transform .15s; }
+  #crosshair::before { content: ""; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 3px #000; }
+  #crosshair::after { content: ""; position: absolute; inset: 0; border: 1.5px solid rgba(233,238,242,.5); border-radius: 50%; }
+  #crosshair.aim { transform: scale(.6); }
+  #hitmarker { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; opacity: 0; }
+  #hitmarker.on { opacity: 1; }
+  #hitmarker::before, #hitmarker::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px;
+    background: linear-gradient(#fff 0 30%, transparent 30% 70%, #fff 70%); }
+  #hitmarker::before { transform: rotate(45deg); } #hitmarker::after { transform: rotate(-45deg); }
+
+  #subs {
+    position: fixed; left: 50%; bottom: 13vh; transform: translateX(-50%); z-index: 7;
+    max-width: min(760px, 90vw); text-align: center; font-size: 19px; line-height: 1.45;
+    padding: 6px 14px; text-shadow: 0 1px 2px #000, 0 0 12px rgba(0,0,0,.9);
+    opacity: 0; transition: opacity .25s; pointer-events: none;
+  }
+  #subs.on { opacity: 1; }
+  #subs b { color: var(--accent); font-weight: 600; margin-right: 6px; }
+
+  #hint { position: absolute; left: 40px; bottom: 36px; font-size: 12px; color: var(--dim); line-height: 1.9; letter-spacing: .03em; }
+  #hint kbd { display: inline-block; min-width: 20px; padding: 0 5px; border: 1px solid rgba(233,238,242,.35); border-radius: 3px; font: inherit; font-size: 11px; text-align: center; margin-right: 4px; }
+
+  /* carton d'ouverture */
+  #intro { position: fixed; inset: 0; z-index: 8; display: grid; place-items: center; pointer-events: none; opacity: 0; transition: opacity 1.4s; }
+  #intro.show { opacity: 1; animation: introFade 12s forwards; }
+  @keyframes introFade { 0%, 45% { opacity: 1; } 65%, 100% { opacity: 0; } }
+  #intro h2 { margin: 0; font-weight: 200; font-size: clamp(42px, 8vw, 96px); letter-spacing: .35em; text-indent: .35em; }
+  #intro p { margin: 12px 0 0; text-align: center; font-size: 13px; letter-spacing: .3em; text-transform: uppercase; color: var(--dim); }
+  #intro .skip { position: fixed; right: 40px; bottom: calc(11vh + 18px); font-size: 11px; letter-spacing: .2em; color: var(--dim); text-transform: uppercase; }
+
+  /* écrans */
+  .overlay {
+    position: fixed; inset: 0; z-index: 10; display: grid; place-items: center;
+    background: radial-gradient(ellipse at 50% 40%, rgba(8,16,22,.55), rgba(2,4,6,.92));
+    opacity: 0; pointer-events: none; transition: opacity .6s;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+  .panel { width: min(560px, calc(100vw - 32px)); text-align: center; }
+  .panel h1 { margin: 0; font-weight: 200; font-size: clamp(48px, 10vw, 104px); letter-spacing: .32em; text-indent: .32em; line-height: 1; }
+  .panel .kicker { font-size: 12px; letter-spacing: .4em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
+  .panel .lede { color: var(--dim); font-size: 15px; line-height: 1.6; margin: 22px auto 28px; max-width: 460px; }
+  .panel h2 { margin: 0 0 10px; font-weight: 200; font-size: 44px; letter-spacing: .2em; }
+  button.btn {
+    font: inherit; font-size: 13px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink);
+    background: transparent; border: 1px solid rgba(233,238,242,.6); padding: 14px 34px; cursor: pointer;
+    transition: background .2s, color .2s;
+  }
+  button.btn:hover:not(:disabled), button.btn:focus-visible { background: var(--ink); color: #05090c; outline: none; }
+  button.btn:disabled { opacity: .4; cursor: wait; }
+  .controls { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; text-align: left; margin: 30px auto 0; width: fit-content; font-size: 13px; color: var(--dim); }
+  .controls kbd { font: inherit; font-size: 12px; color: var(--ink); border: 1px solid rgba(233,238,242,.3); border-radius: 3px; padding: 1px 6px; margin-right: 3px; }
+  .legal { margin-top: 30px; font-size: 11px; line-height: 1.6; color: rgba(233,238,242,.42); }
+  #title { background: linear-gradient(180deg, rgba(2,4,6,.2), rgba(2,4,6,.75) 70%); }
+  #loading { font-size: 12px; letter-spacing: .3em; color: var(--dim); margin-top: 14px; text-transform: uppercase; }
+  #dead h2 { color: #f0f0f0; }
+
+  @media (max-width: 720px) {
+    #objective { left: 16px; top: 20px; } #nav { right: 16px; top: 18px; } #ammo { right: 16px; } #reload { right: 16px; }
+    #hint { display: none; }
+  }
+</style>
+<script type="importmap">
+  { "imports": { "three": "./lib/three.module.js" } }
+</script>
+</head>
+<body class="bars">
+
+<canvas id="game" aria-label="Scène 3D du jeu"></canvas>
+
+<div class="hud" aria-hidden="true">
+  <div id="objective"><small>Objectif</small><span></span></div>
+  <div id="nav">
+    <div class="row"><span id="dist">— m</span><span id="compass"></span></div>
+    <small>Cargo</small>
+    <div id="speed">0 nœuds</div>
+  </div>
+  <div id="crosshair"></div>
+  <div id="hitmarker"></div>
+  <div id="ammo"><b>15</b><i>/ ∞</i></div>
+  <div id="reload"><div id="reloadBar"></div></div>
+  <div id="hint">
+    <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> piloter · <kbd>Maj</kbd> pleins gaz<br>
+    Clic droit viser · Clic gauche tirer · <kbd>R</kbd> recharger
+  </div>
+</div>
+
+<div id="subs" role="status" aria-live="polite"></div>
+
+<div id="intro" aria-hidden="true">
+  <div>
+    <h2>TEMPÊTE</h2>
+    <p>Océan Indien · 2 h 40 · Force 10</p>
+  </div>
+  <span class="skip">Espace · passer</span>
+</div>
+
+<section class="overlay show" id="title" aria-labelledby="titleH">
+  <div class="panel">
+    <div class="kicker">Prologue</div>
+    <h1 id="titleH">TEMPÊTE</h1>
+    <p class="lede">Deux frères, une vedette, et des mercenaires lancés à leurs trousses.
+      Traverse la tempête jusqu'au cargo à la dérive.</p>
+    <button class="btn" id="play" type="button" disabled>Jouer</button>
+    <div id="loading">Chargement de l'océan…</div>
+    <div class="controls">
+      <span><kbd>Z</kbd><kbd>S</kbd> / <kbd>W</kbd><kbd>S</kbd></span><span>gaz · marche arrière</span>
+      <span><kbd>Q</kbd><kbd>D</kbd> / <kbd>A</kbd><kbd>D</kbd></span><span>barre</span>
+      <span><kbd>Maj</kbd></span><span>pleins gaz</span>
+      <span><kbd>Souris</kbd></span><span>regarder · clic droit viser · clic gauche tirer</span>
+      <span><kbd>R</kbd> · <kbd>Échap</kbd></span><span>recharger · pause</span>
+    </div>
+    <p class="legal">Hommage non officiel à la première mission d'<i>Uncharted 4 : A Thief's End</i>
+      (Naughty Dog / Sony Interactive Entertainment). Création originale : modèles, sons, textes et
+      code sont tous générés pour ce projet, aucun élément du jeu d'origine n'est utilisé.
+      Le casque est conseillé. Ajouter <code>?q=low</code> à l'adresse sur une machine modeste.</p>
+  </div>
+</section>
+
+<section class="overlay" id="pause" aria-labelledby="pauseH">
+  <div class="panel">
+    <h2 id="pauseH">Pause</h2>
+    <button class="btn" id="resume" type="button">Reprendre</button>
+  </div>
+</section>
+
+<section class="overlay" id="dead" aria-labelledby="deadH">
+  <div class="panel">
+    <h2 id="deadH">Tu es mort</h2>
+    <p class="lede">La vedette dérive, moteur coupé. Élias crie ton nom dans le vent.</p>
+    <button class="btn" id="retry" type="button">Reprendre au point de contrôle</button>
+  </div>
+</section>
+
+<section class="overlay" id="end" aria-labelledby="endH">
+  <div class="panel">
+    <div class="kicker">Fin du prologue</div>
+    <h2 id="endH">À suivre…</h2>
+    <p class="lede">La vague a tout emporté. Quand tu rouvres les yeux, des années plus tôt,
+      un autre souvenir commence.</p>
+    <p class="lede" id="stat"></p>
+    <button class="btn" id="again" type="button">Rejouer</button>
+  </div>
+</section>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
