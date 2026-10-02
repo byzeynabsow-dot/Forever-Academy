@@ -54,47 +54,133 @@ export function hullGeometry(L, B, H, { deadrise = 0.45, bowRise = 0.25, flare =
   return g;
 }
 
-/* Personnage stylisé (~1,8 m), debout, arme au poing. */
-export function makeCharacter({ shirt = 0x8a7a62, pants = 0x2a3140, skin = 0xb98a6a, hair = 0x2b1d14, jacket = null } = {}) {
+/* Personnage articulé (~1,8 m, face à +Z, origine aux pieds) :
+   bassin, genoux, colonne, épaules, coudes, tête. Animé par animateCharacter. */
+export function makeCharacter({ shirt = 0x8a7a62, pants = 0x2a3140, skin = 0xb98a6a, hair = 0x2b1d14, jacket = null, rolledSleeves = false } = {}) {
   const g = new THREE.Group();
-  const mSkin = std(skin, 0.7), mShirt = std(shirt, 0.85), mPants = std(pants, 0.9), mHair = std(hair, 0.9);
-  const mGun = std(0x1a1a1c, 0.4, 0.8);
-  const cap = (r, l, m) => new THREE.Mesh(new THREE.CapsuleGeometry(r, l, 4, 10), m);
+  const mSkin = std(skin, 0.62), mShirt = std(shirt, 0.88), mPants = std(pants, 0.92), mHair = std(hair, 0.95);
+  const mTop = jacket ? std(jacket, 0.7, 0.05) : mShirt;
+  const mBoot = std(0x231a14, 0.7), mStrap = std(0x3a2a1e, 0.8), mGun = std(0x1a1a1c, 0.4, 0.8);
+  const cap = (r, l, m, segs = 10) => new THREE.Mesh(new THREE.CapsuleGeometry(r, l, 4, segs), m);
+  const sph = (r, m, w = 14, h = 10) => new THREE.Mesh(new THREE.SphereGeometry(r, w, h), m);
+  const grp = (x, y, z, ...kids) => { const o = new THREE.Group(); o.position.set(x, y, z); if (kids.length) o.add(...kids); return o; };
+  const at = (m, x, y, z) => { m.position.set(x, y, z); return m; };
 
-  const legL = cap(0.085, 0.72, mPants); legL.position.set(0.11, 0.48, 0);
-  const legR = cap(0.085, 0.72, mPants); legR.position.set(-0.11, 0.48, 0);
-  const torso = cap(0.19, 0.42, jacket ? std(jacket, 0.8) : mShirt);
-  torso.position.set(0, 1.18, 0); torso.scale.set(1, 1, 0.72);
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.1, 8), mSkin); neck.position.set(0, 1.5, 0);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.115, 16, 12), mSkin);
-  head.scale.set(0.9, 1.08, 1); head.position.set(0, 1.64, 0.01);
-  const hairM = new THREE.Mesh(new THREE.SphereGeometry(0.122, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), mHair);
-  hairM.position.set(0, 1.665, -0.005); hairM.scale.set(0.92, 1, 1.02);
+  // bassin et jambes
+  const hips = grp(0, 0.95, 0);
+  const pelvis = cap(0.13, 0.1, mPants); pelvis.rotation.z = Math.PI / 2; pelvis.scale.set(1, 1, 0.75);
+  const belt = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.018, 6, 20), mStrap);
+  belt.rotation.x = Math.PI / 2; belt.scale.set(1, 0.72, 1); belt.position.y = 0.07;
+  hips.add(pelvis, belt);
+  const legs = [];
+  for (const sx of [1, -1]) {
+    const thigh = at(cap(0.075, 0.32, mPants), 0, -0.21, 0);
+    const shin = at(cap(0.06, 0.32, mPants), 0, -0.2, 0);
+    const boot = at(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.09, 0.25), mBoot), 0, -0.43, 0.04);
+    const knee = grp(0, -0.44, 0, shin, boot);
+    const leg = grp(sx * 0.1, -0.03, 0, thigh, knee);
+    leg.rotation.z = sx * 0.06;
+    hips.add(leg);
+    legs.push({ leg, knee, boot });
+  }
 
-  // bras gauche le long du corps, bras droit tendu avec le pistolet
-  const armL = new THREE.Group(); armL.position.set(0.24, 1.38, 0);
-  const aL = cap(0.055, 0.5, jacket ? std(jacket, 0.8) : mShirt); aL.position.y = -0.27; armL.add(aL);
-  armL.rotation.z = 0.12;
-  const armR = new THREE.Group(); armR.position.set(-0.24, 1.38, 0);
-  const aR = cap(0.055, 0.5, jacket ? std(jacket, 0.8) : mShirt); aR.position.y = -0.27; armR.add(aR);
-  const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), mSkin); hand.position.y = -0.56; armR.add(hand);
+  // colonne, buste, tête
+  const spine = grp(0, 0.08, 0);
+  hips.add(spine);
+  const chest = at(cap(0.17, 0.3, mTop, 14), 0, 0.27, 0); chest.scale.set(1.05, 1, 0.66);
+  const strap = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.014, 5, 24), mStrap);
+  strap.position.set(0, 0.3, 0); strap.rotation.set(0.15, 0, 0.75); strap.scale.set(0.82, 1.2, 0.62);
+  spine.add(chest, strap);
+  if (jacket) {
+    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.03, 6, 14, Math.PI * 1.4), mTop);
+    collar.position.set(0, 0.5, -0.01); collar.rotation.set(Math.PI / 2 - 0.2, 0, Math.PI * 0.8);
+    spine.add(collar);
+  }
+  const neck = at(new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.056, 0.11, 10), mSkin), 0, 0.54, 0);
+  spine.add(neck);
+  const head = grp(0, 0.66, 0.01);
+  const skull = sph(0.105, mSkin, 18, 14); skull.scale.set(0.88, 1.06, 1);
+  const jaw = at(sph(0.078, mSkin), 0, -0.055, 0.025); jaw.scale.set(0.95, 0.75, 1);
+  const nose = at(new THREE.Mesh(new THREE.ConeGeometry(0.017, 0.045, 6), mSkin), 0, -0.01, 0.1); nose.rotation.x = Math.PI / 2 + 0.3;
+  const earL = at(sph(0.022, mSkin, 6, 5), 0.092, 0, -0.005); earL.scale.set(0.5, 1, 0.8);
+  const earR = at(sph(0.022, mSkin, 6, 5), -0.092, 0, -0.005); earR.scale.set(0.5, 1, 0.8);
+  const hairM = at(new THREE.Mesh(new THREE.SphereGeometry(0.112, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.52), mHair), 0, 0.018, -0.008);
+  hairM.scale.set(0.92, 1, 1.03);
+  const brow = at(new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.012, 0.02), mHair), 0, 0.035, 0.088);
+  const beard = at(sph(0.08, mHair, 12, 8), 0, -0.06, 0.022); beard.scale.set(0.97, 0.72, 1.02);
+  beard.material = std(hair, 1, 0, { transparent: true, opacity: 0.45 });
+  head.add(skull, jaw, beard, nose, earL, earR, hairM, brow);
+  spine.add(head);
+
+  // bras : épaule → coude → main
+  const arm = (sx) => {
+    const upper = at(cap(0.052, 0.24, mTop), 0, -0.15, 0);
+    const fore = at(cap(0.046, 0.22, rolledSleeves ? mSkin : mTop), 0, -0.14, 0);
+    const hand = at(sph(0.045, mSkin, 8, 6), 0, -0.29, 0.01); hand.scale.set(0.8, 1.15, 0.65);
+    const elbow = grp(0, -0.3, 0, fore, hand);
+    const shoulder = grp(sx * 0.215, 0.47, 0, upper, elbow);
+    shoulder.rotation.order = 'YXZ';
+    spine.add(shoulder);
+    return { shoulder, elbow, hand };
+  };
+  const L = arm(1), R = arm(-1);
   const gun = new THREE.Group();
-  const slide = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.045, 0.2), mGun); slide.position.set(0, 0.02, 0.06);
-  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.1, 0.045), mGun); grip.position.set(0, -0.03, 0); grip.rotation.x = -0.25;
+  const slide = at(new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.042, 0.19), mGun), 0, 0.02, 0.06);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.1, 0.045), mGun); grip.rotation.x = -0.25;
   gun.add(slide, grip);
-  gun.position.set(0, -0.6, 0.02); gun.rotation.x = Math.PI / 2;
-  armR.add(gun);
-  const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0.03, 0.17); gun.add(muzzle);
+  gun.position.set(0, -0.3, 0.02); gun.rotation.x = Math.PI / 2;
+  R.elbow.add(gun);
+  const muzzle = new THREE.Object3D(); muzzle.position.set(0, 0.03, 0.16); gun.add(muzzle);
 
-  g.add(legL, legR, torso, neck, head, hairM, armL, armR);
-  g.userData = { armR, armL, head, torso, muzzle };
+  g.add(hips);
+  g.userData = {
+    armR: R.shoulder, armL: L.shoulder, elbowR: R.elbow, elbowL: L.elbow,
+    head, torso: spine, hips, legs, muzzle,
+    anim: { bend: 0.2, recoil: 0, aim: 0, phase: Math.random() * 6 },
+  };
   return g;
 }
 
+/* Pose procédurale : genoux qui amortissent la houle, buste qui compense
+   la gîte, visée à deux mains, recul. */
+export function animateCharacter(ch, dt, { aim = false, pitch = 0, heave = 0, roll = 0, t = 0 } = {}) {
+  const u = ch.userData, A = u.anim;
+  const k = 1 - Math.exp(-10 * dt);
+  A.aim += ((aim ? 1 : 0) - A.aim) * (1 - Math.exp(-12 * dt));
+  A.recoil *= Math.exp(-14 * dt);
+  const bendT = THREE.MathUtils.clamp(0.22 - heave * 0.045 + A.aim * 0.08, 0.08, 0.75);
+  A.bend += (bendT - A.bend) * k;
+
+  for (const L of u.legs) {
+    L.leg.rotation.x = -A.bend;
+    L.knee.rotation.x = A.bend * 2;
+    L.boot.rotation.x = -A.bend;
+  }
+  u.hips.position.y = 0.95 - 0.88 * (1 - Math.cos(A.bend));
+  u.hips.position.z = -0.04 * A.bend;
+
+  const breathe = Math.sin(t * 1.6 + A.phase);
+  u.torso.rotation.x = 0.06 + A.bend * 0.6 + A.aim * 0.05 + breathe * 0.01;
+  u.torso.rotation.z = -roll * 0.7;
+  u.head.rotation.x = -pitch * 0.5 * A.aim - A.bend * 0.4;
+  u.head.rotation.z = roll * 0.3;
+
+  // bras droit : arme basse → bras tendu dans l'axe de visée
+  const a = A.aim, r = A.recoil;
+  u.armR.rotation.x = THREE.MathUtils.lerp(0.25, -Math.PI / 2 - pitch - u.torso.rotation.x, a) + r * 0.22;
+  u.armR.rotation.y = THREE.MathUtils.lerp(0, 0.12, a);
+  u.armR.rotation.z = THREE.MathUtils.lerp(-0.08, 0, a);
+  u.elbowR.rotation.x = THREE.MathUtils.lerp(-0.75, -0.05, a) - r * 0.35;
+  // bras gauche : soutient la crosse en visée, sinon se tient au bateau
+  u.armL.rotation.x = THREE.MathUtils.lerp(0.1 + breathe * 0.02, -Math.PI / 2 - pitch - u.torso.rotation.x + 0.15, a) + r * 0.18;
+  u.armL.rotation.y = THREE.MathUtils.lerp(0, -0.62, a);
+  u.armL.rotation.z = THREE.MathUtils.lerp(0.18 + roll * 0.3, 0, a);
+  u.elbowL.rotation.x = THREE.MathUtils.lerp(-0.35, -0.25, a);
+}
+
+// compatibilité : ancienne API de visée
 export function aimArm(ch, pitch, aiming) {
-  const a = ch.userData.armR;
-  const target = aiming ? -Math.PI / 2 - pitch : -0.25;
-  a.rotation.x += (target - a.rotation.x) * 0.3;
+  animateCharacter(ch, 1 / 60, { aim: aiming, pitch });
 }
 
 /* Vedette des deux frères. */
@@ -192,11 +278,18 @@ export function makeMercBoat() {
   pilot.position.set(0, 0.85, -0.2); pilot.rotation.y = 0;
   const gunner = makeCharacter({ shirt: 0x2c3328, pants: 0x23261f, jacket: 0x262a24, skin: 0xc29a7e, hair: 0x111111 });
   gunner.position.set(0.5, 0.85, 1.6);
-  // fusil
-  const rifle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.8), std(0x111111, 0.4, 0.7));
-  rifle.position.set(0, -0.62, 0.25); rifle.rotation.x = Math.PI / 2;
-  gunner.userData.armR.add(rifle);
-  gunner.userData.armR.rotation.x = -Math.PI / 2;
+  // fusil dans les mains du tireur (le pistolet par défaut est masqué)
+  const rifle = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.78), std(0x111111, 0.4, 0.7));
+  const mag = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.14, 0.06), std(0x151515, 0.5, 0.5));
+  mag.position.set(0, -0.09, 0.08);
+  rifle.add(body, mag);
+  rifle.position.set(0, -0.36, 0.05); rifle.rotation.x = Math.PI / 2;
+  gunner.userData.elbowR.add(rifle);
+  gunner.userData.muzzle.parent.visible = false;
+  gunner.userData.muzzle.position.set(0, 0, 0.62);
+  rifle.add(gunner.userData.muzzle);
+  pilot.userData.muzzle.parent.visible = false;
   g.add(pilot, gunner);
 
   g.userData = { L, B, lampPos: new THREE.Vector3(0, 2.45, -1.1), lens, gunner, pilot };

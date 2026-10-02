@@ -8,7 +8,7 @@ import { OutputPass } from '../lib/postprocessing/OutputPass.js';
 import { ShaderPass } from '../lib/postprocessing/ShaderPass.js';
 import { createOcean, heightAt, sea, SPOTS } from './ocean.js';
 import { createSky, createRain, Lightning, Particles, Tracers, Wake, createBeam } from './effects.js';
-import { makeSpeedboat, makeMercBoat, makeCharacter, aimArm, makeCargoShip, makeFloatingContainer } from './models.js';
+import { makeSpeedboat, makeMercBoat, makeCharacter, animateCharacter, makeCargoShip, makeFloatingContainer } from './models.js';
 import { StormAudio } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
@@ -69,18 +69,43 @@ const finalPass = new ShaderPass({
   uniforms: {
     tDiffuse: { value: null }, uTime: { value: 0 }, uDamage: { value: 0 },
     uWhite: { value: 0 }, uFade: { value: 0 }, uRes: { value: new THREE.Vector2(innerWidth, innerHeight) },
+    uWet: { value: 0.4 }, uFlash: env.uFlash,
   },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
   fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse; uniform float uTime, uDamage, uWhite, uFade; uniform vec2 uRes;
+    uniform sampler2D tDiffuse; uniform float uTime, uDamage, uWhite, uFade, uWet, uFlash; uniform vec2 uRes;
     varying vec2 vUv;
+    float h21(vec2 p) { p = fract(p * vec2(233.34, 851.73)); p += dot(p, p + 23.45); return fract(p.x * p.y); }
+    // gouttes sur l'objectif : chaque cellule porte au plus une goutte qui naît,
+    // glisse un peu puis sèche ; renvoie la déviation de réfraction (xy) et le masque (z)
+    vec3 drops(vec2 uv, float scale, float t, float seed) {
+      vec2 st = uv * vec2(uRes.x / uRes.y, 1.0) * scale;
+      vec2 id = floor(st);
+      float n = h21(id + seed);
+      float life = fract(t * (0.12 + n * 0.1) + n * 7.0);
+      st.y += life * life * 0.35 * step(0.8, n);
+      vec2 f = fract(st) - 0.5;
+      vec2 c = (vec2(h21(id + seed + 1.7), h21(id + seed + 9.2)) - 0.5) * 0.55;
+      float r = 0.1 + 0.2 * h21(id + seed + 4.4);
+      vec2 d = f - c;
+      d.y *= 1.0 + 0.4 * step(0.8, n);
+      float l = length(d);
+      float m = smoothstep(r, r * 0.65, l) * step(0.42, n) * smoothstep(1.0, 0.7, life);
+      return vec3(d / r * m, m);
+    }
     void main() {
-      vec2 c = vUv - 0.5;
+      vec2 uv = vUv;
+      vec3 dA = drops(vUv, 9.0, uTime, 0.0);
+      vec3 dB = drops(vUv, 17.0, uTime * 1.3, 31.0);
+      vec2 off = (dA.xy * 0.012 + dB.xy * 0.006) * uWet;
+      float wetMask = max(dA.z, dB.z) * uWet;
+      vec2 c = uv - 0.5;
+      vec2 tuv = uv - off;
       float ca = 0.0012 + uDamage * 0.006;
       vec3 col;
-      col.r = texture2D(tDiffuse, vUv + c * ca).r;
-      col.g = texture2D(tDiffuse, vUv).g;
-      col.b = texture2D(tDiffuse, vUv - c * ca).b;
+      col.r = texture2D(tDiffuse, tuv + c * ca).r;
+      col.g = texture2D(tDiffuse, tuv).g;
+      col.b = texture2D(tDiffuse, tuv - c * ca).b;
       float l = dot(col, vec3(0.299, 0.587, 0.114));
       col = mix(col, vec3(l), clamp(uDamage * 1.1, 0.0, 0.92));
       float r = length(c * vec2(1.0, 0.8));
@@ -88,6 +113,9 @@ const finalPass = new ShaderPass({
       col *= mix(0.42, 1.0, smoothstep(0.82, 0.22, r));
       float g = fract(sin(dot(vUv * uRes + fract(uTime) * 91.7, vec2(12.9898, 78.233))) * 43758.5453);
       col += (g - 0.5) * 0.04;
+      // la goutte assombrit un peu son bord et accroche les éclairs
+      col *= 1.0 - wetMask * 0.03;
+      col += wetMask * (0.015 + uFlash * 0.08) * smoothstep(0.2, -0.6, (dA.y + dB.y));
       col = mix(col, vec3(0.92, 0.95, 1.0), uWhite);
       col *= 1.0 - uFade;
       gl_FragColor = vec4(col, 1.0);
@@ -163,7 +191,7 @@ class Boat {
 const playerObj = makeSpeedboat();
 const player = new Boat(playerObj, { L: 8.2, B: 2.7, maxSpeed: 21, boostSpeed: 28, turn: 0.95 });
 scene.add(playerObj);
-const hero = makeCharacter({ shirt: 0x8d7b63, pants: 0x2f3a4c, skin: 0xc49a7c, hair: 0x2a1c12 });
+const hero = makeCharacter({ shirt: 0x8d7b63, pants: 0x2f3a4c, skin: 0xc49a7c, hair: 0x2a1c12, rolledSleeves: true });
 hero.position.set(0.35, 0.95, -0.2);
 const brother = makeCharacter({ jacket: 0x2a2724, shirt: 0x5a5a58, pants: 0x1f232b, skin: 0xbb8f70, hair: 0x3a2a1c });
 brother.position.set(-0.6, 0.93, -2.5);
@@ -269,6 +297,10 @@ const WAVES = [
 ];
 
 const input = { keys: {}, lmb: false, rmb: false, mx: 0, my: 0, lastMouse: -99 };
+// commandes tactiles : joystick à gauche, regard au doigt à droite, boutons
+const touch = { on: false, jx: 0, jy: 0, fire: false, aim: false, boost: false };
+const aimHeld = () => input.rmb || touch.aim;
+const fireHeld = () => input.lmb || touch.fire;
 const cam = { yaw: 0, pitch: 0.16, dist: 9.5, heading: 0, aim: 0, tx: 0, ty: 0, tz: 0 };
 
 /* ======================================================= audio */
@@ -312,6 +344,7 @@ addEventListener('keydown', (e) => {
 });
 addEventListener('keyup', (e) => { input.keys[e.code] = false; });
 canvas.addEventListener('mousedown', (e) => {
+  if (touch.on) return;
   if (state === 'play' && document.pointerLockElement !== canvas) lock();
   if (e.button === 0) input.lmb = true;
   if (e.button === 2) input.rmb = true;
@@ -327,7 +360,59 @@ addEventListener('mousemove', (e) => {
   input.lastMouse = time;
 });
 let hadLock = false, lockedAt = 0;
-function lock() { try { const p = canvas.requestPointerLock?.(); p?.catch?.(() => {}); } catch { /* ignoré */ } }
+
+function setupTouch() {
+  const pad = $('pad'), knob = $('knob');
+  let padId = null, lookId = null, lx = 0, ly = 0, cx = 0, cy = 0;
+  const R = 56;
+  const enable = () => { if (!touch.on) { touch.on = true; document.body.classList.add('touch'); } };
+  addEventListener('touchstart', enable, { passive: true, capture: true });
+  pad.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const t = e.changedTouches[0]; padId = t.identifier;
+    const r = pad.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+    movePad(t);
+  }, { passive: false });
+  const movePad = (t) => {
+    let dx = t.clientX - cx, dy = t.clientY - cy;
+    const l = Math.hypot(dx, dy); if (l > R) { dx *= R / l; dy *= R / l; }
+    touch.jx = dx / R; touch.jy = dy / R;
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+  };
+  canvas.addEventListener('touchstart', (e) => {
+    if (state === 'intro') { startPlay(); return; }
+    const t = e.changedTouches[0];
+    if (lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY; }
+  }, { passive: true });
+  addEventListener('touchmove', (e) => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === padId) movePad(t);
+      else if (t.identifier === lookId) {
+        input.mx += (t.clientX - lx) * 1.6; input.my += (t.clientY - ly) * 1.6;
+        lx = t.clientX; ly = t.clientY; input.lastMouse = time;
+      }
+    }
+    if (padId !== null || lookId !== null) e.preventDefault();
+  }, { passive: false });
+  const end = (e) => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === padId) { padId = null; touch.jx = touch.jy = 0; knob.style.transform = ''; }
+      if (t.identifier === lookId) lookId = null;
+    }
+  };
+  addEventListener('touchend', end); addEventListener('touchcancel', end);
+  const hold = (id, key) => {
+    const el = $(id);
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); touch[key] = true; el.classList.add('on'); }, { passive: false });
+    const up = (e) => { e.preventDefault(); touch[key] = false; el.classList.remove('on'); };
+    el.addEventListener('touchend', up); el.addEventListener('touchcancel', up);
+  };
+  hold('tFire', 'fire'); hold('tBoost', 'boost');
+  $('tAim').addEventListener('touchstart', (e) => { e.preventDefault(); touch.aim = !touch.aim; $('tAim').classList.toggle('on', touch.aim); }, { passive: false });
+  $('tReload').addEventListener('touchstart', (e) => { e.preventDefault(); if (state === 'play') reload(); }, { passive: false });
+  $('tPause').addEventListener('touchstart', (e) => { e.preventDefault(); togglePause(); }, { passive: false });
+}
+function lock() { if (touch.on) return; try { const p = canvas.requestPointerLock?.(); p?.catch?.(() => {}); } catch { /* ignoré */ } }
 document.addEventListener('pointerlockchange', () => {
   if (document.pointerLockElement === canvas) { hadLock = true; lockedAt = performance.now(); }
   else if (hadLock && state === 'play') togglePause();
@@ -470,8 +555,9 @@ function playerShoot() {
   if (G.reloading > 0 || G.fireCd > 0) return;
   if (G.ammo <= 0) { audio?.click(); reload(); G.fireCd = 0.3; return; }
   G.ammo--; G.fireCd = 0.2; G.lastShot = time;
+  hero.userData.anim.recoil = 1;
   camera.getWorldDirection(_d);
-  const spread = input.rmb ? 0.004 : 0.018;
+  const spread = aimHeld() ? 0.004 : 0.018;
   _d.x += rand(-spread, spread); _d.y += rand(-spread, spread); _d.z += rand(-spread, spread);
   _d.normalize();
   _o.copy(camera.position);
@@ -587,6 +673,11 @@ function updateEnemies(dt) {
     const gunner = e.obj.userData.gunner;
     const local = e.obj.worldToLocal(_o.set(player.x, player.y + 1, player.z));
     gunner.rotation.y = Math.atan2(local.x - gunner.position.x, local.z - gunner.position.z);
+    if (dist < 200) {
+      const anim = { heave: b.vy, roll: b.roll, t: time };
+      animateCharacter(gunner, dt, { ...anim, aim: true, pitch: Math.atan2(local.y - 2.2, Math.hypot(local.x, local.z)) });
+      animateCharacter(e.obj.userData.pilot, dt, anim);
+    }
 
     // traînée de fumée si endommagé
     if (e.hp < 50 && Math.random() < dt * 12) {
@@ -602,6 +693,7 @@ function updateEnemies(dt) {
         if (e.burst <= 0) e.burst = 3 + ((Math.random() * 3) | 0);
         e.burst--;
         e.fireCd = e.burst > 0 ? 0.11 : rand(1.3, 2.6);
+        gunner.userData.anim.recoil = 0.6;
         const chance = clamp(0.4 - dist / 330 - Math.abs(player.speed) / 110 - (player.air > 0.1 ? 0.15 : 0), 0.05, 0.38);
         gunner.userData.muzzle.getWorldPosition(_m);
         _m.add(_d.set(player.x - b.x, 0, player.z - b.z).normalize().multiplyScalar(0.6));
@@ -647,6 +739,7 @@ function emitWakeSpray(b, k = 1) {
 }
 
 player.onSlam = (k) => {
+  G.wet = Math.min(1.4, (G.wet ?? 0.4) + 0.5 * k);
   G.shake = Math.max(G.shake, 0.35 * k);
   audio?.slam(k);
   for (let i = 0; i < 70 * k; i++) {
@@ -685,7 +778,7 @@ function collide(b) {
 
 /* ================================================== caméra */
 function updateCamera(dt) {
-  const aimK = (input.rmb && state === 'play') ? 1 : 0;
+  const aimK = (aimHeld() && state === 'play') ? 1 : 0;
   cam.aim += (aimK - cam.aim) * (1 - Math.exp(-10 * dt));
   cam.yaw -= input.mx * 0.0023 * (1 - cam.aim * 0.45);
   cam.pitch = clamp(cam.pitch + input.my * 0.0019 * (1 - cam.aim * 0.45), -0.35, 0.95);
@@ -779,8 +872,12 @@ function frame(now) {
   if (state === 'play') {
     throttle = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
     steer = (k.KeyA || k.ArrowLeft ? 1 : 0) - (k.KeyD || k.ArrowRight ? 1 : 0);
-    boost = !!(k.ShiftLeft || k.ShiftRight) && throttle > 0;
-    if (input.lmb) playerShoot();
+    if (touch.on) {
+      throttle = clamp(throttle - touch.jy * 1.25, -1, 1);
+      steer = clamp(steer - touch.jx * 1.25, -1, 1);
+    }
+    boost = (!!(k.ShiftLeft || k.ShiftRight) || touch.boost) && throttle > 0;
+    if (fireHeld()) playerShoot();
   } else if (state === 'intro' || state === 'title') {
     throttle = 0.55; steer = Math.sin(time * 0.3) * 0.15;
   } else if (state === 'finale') {
@@ -792,11 +889,10 @@ function frame(now) {
   // personnages
   const camDir = camera.getWorldDirection(_d);
   const aimYaw = Math.atan2(camDir.x, camDir.z);
-  const aiming = input.rmb || time - G.lastShot < 1.2;
+  const aiming = aimHeld() || time - G.lastShot < 1.2;
   const heroYaw = aiming && state === 'play' ? wrapAngle(aimYaw - player.heading) : 0;
   hero.rotation.y += wrapAngle(heroYaw - hero.rotation.y) * (1 - Math.exp(-12 * dt));
-  aimArm(hero, Math.asin(clamp(camDir.y, -1, 1)) + 0.05, aiming && state === 'play');
-  hero.userData.torso.rotation.z = Math.sin(time * 1.7) * 0.02 - player.roll * 0.4;
+  animateCharacter(hero, dt, { aim: aiming && state === 'play', pitch: Math.asin(clamp(camDir.y, -1, 1)) + 0.05, heave: player.vy, roll: player.roll, t: time });
 
   // le frère couvre l'arrière et tire sur l'ennemi le plus proche
   let near = null, nd = 1e9;
@@ -807,10 +903,11 @@ function frame(now) {
   }
   const bTarget = near ? wrapAngle(Math.atan2(near.boat.x - player.x, near.boat.z - player.z) - player.heading) : Math.PI;
   brother.rotation.y += wrapAngle(bTarget - brother.rotation.y) * (1 - Math.exp(-4 * dt));
-  aimArm(brother, -0.05, !!near);
+  animateCharacter(brother, dt, { aim: !!near, pitch: -0.05, heave: player.vy, roll: player.roll, t: time });
   G.brotherCd = (G.brotherCd ?? 2) - dt;
   if (near && nd < 120 && G.brotherCd <= 0 && state === 'play') {
     G.brotherCd = rand(1.1, 2.0);
+    brother.userData.anim.recoil = 1;
     brother.userData.muzzle.getWorldPosition(_m);
     const hitIt = Math.random() < 0.32;
     const to = new THREE.Vector3(near.boat.x + (hitIt ? 0 : rand(-5, 5)), near.boat.y + (hitIt ? 1.2 : 0), near.boat.z + (hitIt ? 0 : rand(-5, 5)));
@@ -871,6 +968,8 @@ function frame(now) {
     if (G.stateT > 1.2 && !$('dead').classList.contains('show')) setOverlay('dead');
   } else if (state !== 'end' && state !== 'finale') G.fade = Math.max(0, G.fade - dt * 0.6);
   finalPass.uniforms.uDamage.value = G.damageFx;
+  G.wet = Math.max(0.35, (G.wet ?? 0.4) - dt * 0.12);
+  finalPass.uniforms.uWet.value = G.wet * (1 - cam.aim * 0.5);
   finalPass.uniforms.uWhite.value = G.white;
   finalPass.uniforms.uFade.value = G.fade;
   finalPass.uniforms.uTime.value = time;
@@ -991,12 +1090,13 @@ function updateHud(dt) {
   $('compass').style.transform = `rotate(${-ang}rad)`;
   G.hitmarker -= dt;
   elHit.classList.toggle('on', G.hitmarker > 0);
-  elCross.classList.toggle('aim', input.rmb);
+  elCross.classList.toggle('aim', aimHeld());
   elReload.style.transform = `scaleX(${G.reloading > 0 ? 1 - G.reloading / 1.3 : 0})`;
   $('speed').textContent = `${Math.round(Math.abs(player.speed) * 1.94)} nœuds`;
 }
 
 if (DEBUG) window.__game = { THREE, ship, layers: { spray: spray.mesh, smoke: smoke.mesh, fire: fire.mesh, rain: rain.mesh, wake: playerWake.mesh, tracers: tracers.mesh }, bloom, headlight, G, cam, player, enemies, sea, get state() { return state; }, set state(v) { state = v; }, startPlay, spawnEnemy, startFinale, damagePlayer, damageEnemy, SHIP };
+setupTouch();
 frame();
 $('loading').remove();
 $('play').disabled = false;

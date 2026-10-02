@@ -110,6 +110,28 @@
   #loading { font-size: 12px; letter-spacing: .3em; color: var(--dim); margin-top: 14px; text-transform: uppercase; }
   #dead h2 { color: #f0f0f0; }
 
+
+  /* tactile */
+  .touchui { display: none; }
+  body.touch.playing:not(.cinema) .touchui { display: block; }
+  body.touch #hint { display: none; }
+  body.touch canvas#game { touch-action: none; }
+  .touchui > * { position: fixed; z-index: 9; -webkit-user-select: none; user-select: none; touch-action: none; }
+  #pad { left: 28px; bottom: 28px; width: 140px; height: 140px; border-radius: 50%;
+    border: 1.5px solid rgba(233,238,242,.35); background: rgba(5,9,12,.25); }
+  #knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
+    background: rgba(233,238,242,.35); }
+  .touchui button { font: inherit; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink);
+    border-radius: 50%; border: 1.5px solid rgba(233,238,242,.45); background: rgba(5,9,12,.3); }
+  .touchui button.on { background: rgba(233,238,242,.4); color: #05090c; }
+  #tFire { right: 28px; bottom: 96px; width: 84px; height: 84px; border-color: var(--accent); }
+  #tAim { right: 124px; bottom: 54px; width: 64px; height: 64px; }
+  #tBoost { right: 120px; bottom: 140px; width: 56px; height: 56px; font-size: 10px; }
+  #tReload { right: 40px; bottom: 26px; width: 50px; height: 50px; }
+  #tPause { left: 50%; top: 14px; margin-left: -22px; width: 44px; height: 44px; font-size: 11px; }
+  body.touch #ammo { bottom: auto; top: 112px; right: 16px; }
+  body.touch #reload { bottom: auto; top: 160px; }
+
   @media (max-width: 720px) {
     #objective { left: 16px; top: 20px; } #nav { right: 16px; top: 18px; } #ammo { right: 16px; } #reload { right: 16px; }
     #hint { display: none; }
@@ -140,6 +162,15 @@
   </div>
 </div>
 
+<div class="touchui" aria-hidden="true">
+  <div id="pad"><div id="knob"></div></div>
+  <button id="tFire" type="button">Tir</button>
+  <button id="tAim" type="button">Viser</button>
+  <button id="tBoost" type="button">Turbo</button>
+  <button id="tReload" type="button">R</button>
+  <button id="tPause" type="button">❚❚</button>
+</div>
+
 <div id="subs" role="status" aria-live="polite"></div>
 
 <div id="intro" aria-hidden="true">
@@ -164,6 +195,7 @@
       <span><kbd>Maj</kbd></span><span>pleins gaz</span>
       <span><kbd>Souris</kbd></span><span>regarder · clic droit viser · clic gauche tirer</span>
       <span><kbd>R</kbd> · <kbd>Échap</kbd></span><span>recharger · pause</span>
+      <span><kbd>Tactile</kbd></span><span>joystick à gauche, glisser à droite pour regarder</span>
     </div>
     <p class="legal">Hommage non officiel à la première mission d'<i>Uncharted 4 : A Thief's End</i>
       (Naughty Dog / Sony Interactive Entertainment). Création originale : modèles, sons, textes et

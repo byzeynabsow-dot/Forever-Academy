@@ -99,6 +99,7 @@ Ajouter `?q=low` à l'adresse sur une machine modeste.
 | `Maj` | pleins gaz |
 | Souris | caméra ; clic droit pour viser, clic gauche pour tirer |
 | `R` · `Échap` | recharger · pause |
+| Tactile | joystick à gauche (gaz et barre), glisser à droite pour regarder, boutons Tir, Viser, Turbo, R et pause |
 
 ## Déroulé
 
@@ -120,6 +121,6 @@ Three.js r186 est embarqué dans `tempete/lib/` (licence MIT) : aucun CDN.
 | --- | --- |
 | `js/ocean.js` | 8 vagues de Gerstner évaluées **à l'identique sur le GPU et le CPU** : les bateaux flottent sur la surface affichée. Clapot procédural, écume sur les crêtes, diffusion sous la surface, reflets des projecteurs, brouillard. Vague scélérate de la finale. |
 | `js/effects.js` | Ciel nuageux procédural, 9 000 gouttes de pluie, éclairs ramifiés avec flash et tonnerre retardé, particules (embruns, feu, fumée), traçantes, sillages, faisceaux volumétriques. |
-| `js/models.js` | Coques générées par sections, vedette, semi-rigides, personnages, porte-conteneurs avec ses conteneurs instanciés et ses feux. |
+| `js/models.js` | Coques générées par sections, vedette, semi-rigides, porte-conteneurs. Personnages articulés (bassin, genoux, coudes, visage) animés de façon procédurale : les genoux amortissent la houle, le buste compense la gîte, visée à deux mains, recul. |
 | `js/audio.js` | Son 100 % synthétisé avec Web Audio : pluie, vent, houle, moteur, tonnerre, tirs, explosions. |
-| `js/main.js` | Physique des bateaux (flottaison, sauts sur les vagues, gîte), caméra à l'épaule, combat, IA, script de la mission, post-traitement (bloom, ACES, vignette, grain, dégâts). |
+| `js/main.js` | Physique des bateaux (flottaison, sauts sur les vagues, gîte), caméra à l'épaule, combat, IA, script de la mission, post-traitement (bloom, ACES, vignette, grain, dégâts, gouttes de pluie sur l'objectif). |
