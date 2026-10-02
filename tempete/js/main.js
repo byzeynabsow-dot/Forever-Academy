@@ -1,5 +1,5 @@
-// TEMPÊTE — prologue jouable : poursuite en vedette dans la tempête
-// jusqu'à un cargo à la dérive. Hommage non officiel.
+// TEMPÊTE — prologue jouable en deux chapitres : la poursuite en vedette
+// dans la tempête, puis la traversée à pied du cargo. Hommage non officiel.
 import * as THREE from 'three';
 import { EffectComposer } from '../lib/postprocessing/EffectComposer.js';
 import { RenderPass } from '../lib/postprocessing/RenderPass.js';
@@ -8,8 +8,12 @@ import { OutputPass } from '../lib/postprocessing/OutputPass.js';
 import { ShaderPass } from '../lib/postprocessing/ShaderPass.js';
 import { createOcean, heightAt, sea, SPOTS } from './ocean.js';
 import { createSky, createRain, Lightning, Particles, Tracers, Wake, createBeam } from './effects.js';
-import { makeSpeedboat, makeMercBoat, makeCharacter, animateCharacter, makeCargoShip, makeFloatingContainer } from './models.js';
+import { makeSpeedboat, makeMercBoat, makeCharacter, animateCharacter, setWeapon, makeCargoShip, makeFloatingContainer } from './models.js';
 import { StormAudio } from './audio.js';
+import { LINES } from './lines.js';
+import { settings, loadSettings, bindSettingsForm } from './settings.js';
+import { AimAssist, pickTarget } from './aim.js';
+import { DeckAct } from './deck.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -17,13 +21,13 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has('debug');
+loadSettings();
+const forceLow = params.get('q') === 'low';
 
 /* =========================================================== rendu */
 const canvas = $('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-const quality = params.get('q') === 'low' ? 1 : Math.min(devicePixelRatio, 1.5);
-renderer.setPixelRatio(quality);
-renderer.setSize(innerWidth, innerHeight);
+let pixelRatio = 1;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.55;
 
@@ -39,7 +43,6 @@ const env = {
   uFogDensity: { value: 0.0021 },
 };
 scene.fog = new THREE.FogExp2(env.uHorizon.value.clone(), env.uFogDensity.value);
-scene.background = null;
 
 const hemi = new THREE.HemisphereLight(0x6a7c96, 0x0b1216, 1.5);
 const moon = new THREE.DirectionalLight(0x8a9ab6, 0.45);
@@ -113,7 +116,6 @@ const finalPass = new ShaderPass({
       col *= mix(0.42, 1.0, smoothstep(0.82, 0.22, r));
       float g = fract(sin(dot(vUv * uRes + fract(uTime) * 91.7, vec2(12.9898, 78.233))) * 43758.5453);
       col += (g - 0.5) * 0.04;
-      // la goutte assombrit un peu son bord et accroche les éclairs
       col *= 1.0 - wetMask * 0.03;
       col += wetMask * (0.015 + uFlash * 0.08) * smoothstep(0.2, -0.6, (dA.y + dB.y));
       col = mix(col, vec3(0.92, 0.95, 1.0), uWhite);
@@ -124,14 +126,21 @@ const finalPass = new ShaderPass({
 });
 composer.addPass(finalPass);
 
+function applyQuality() {
+  pixelRatio = settings.quality === 'basse' || forceLow ? 1 : Math.min(devicePixelRatio, 1.5);
+  renderer.setPixelRatio(pixelRatio);
+  composer.setPixelRatio(pixelRatio);
+  resize();
+}
 function resize() {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
-  finalPass.uniforms.uRes.value.set(innerWidth * quality, innerHeight * quality);
+  finalPass.uniforms.uRes.value.set(innerWidth * pixelRatio, innerHeight * pixelRatio);
 }
 addEventListener('resize', resize);
+applyQuality();
 
 /* ========================================================= bateaux */
 class Boat {
@@ -192,11 +201,13 @@ const playerObj = makeSpeedboat();
 const player = new Boat(playerObj, { L: 8.2, B: 2.7, maxSpeed: 21, boostSpeed: 28, turn: 0.95 });
 scene.add(playerObj);
 const hero = makeCharacter({ shirt: 0x8d7b63, pants: 0x2f3a4c, skin: 0xc49a7c, hair: 0x2a1c12, rolledSleeves: true });
-hero.position.set(0.35, 0.95, -0.2);
 const brother = makeCharacter({ jacket: 0x2a2724, shirt: 0x5a5a58, pants: 0x1f232b, skin: 0xbb8f70, hair: 0x3a2a1c });
-brother.position.set(-0.6, 0.93, -2.5);
-brother.rotation.y = Math.PI;
-playerObj.add(hero, brother);
+function seatOnBoat() {
+  playerObj.add(hero, brother);
+  hero.position.set(0.35, 0.95, -0.2); hero.rotation.set(0, 0, 0);
+  brother.position.set(-0.6, 0.93, -2.5); brother.rotation.set(0, Math.PI, 0);
+}
+seatOnBoat();
 
 const headlight = new THREE.SpotLight(0xf0f4ff, 0, 190, 0.32, 0.55, 2);
 headlight.position.copy(playerObj.userData.headlightPos);
@@ -218,6 +229,9 @@ ship.position.set(SHIP.x, 0, SHIP.z);
 ship.rotation.y = SHIP.yaw;
 scene.add(ship);
 
+// lampes de pont : trois lumières réelles déplacées vers les feux les plus proches
+const deckLamps = [0, 1, 2].map(() => { const l = new THREE.PointLight(0xffc28a, 0, 22, 2); ship.add(l); return l; });
+
 // conteneurs tombés à la mer, entre la vedette et le flanc du cargo
 const containers = [];
 {
@@ -232,7 +246,7 @@ const containers = [];
   }
 }
 
-/* =================================================== ennemis */
+/* =================================================== ennemis (chapitre 1) */
 const SPOT_POOL = [];
 for (let i = 0; i < 3; i++) {
   const s = new THREE.SpotLight(0xe8eeff, 0, 200, 0.2, 0.45, 2);
@@ -265,8 +279,8 @@ function spawnEnemy(dist = rand(120, 170)) {
     orbit: rand(0, Math.PI * 2), pref: rand(32, 58), burst: 0, fireCd: rand(1.5, 3),
     aim: new THREE.Vector3(boat.x, 0, boat.z), smokeT: 0,
   };
-  slot.light.intensity = 4500;
-  slot.beam.visible = true;
+  slot.light.intensity = 4500; slot.light.angle = 0.2; slot.light.distance = 200;
+  slot.beam.visible = true; slot.beam.scale.setScalar(1);
   enemies.push(e);
   return true;
 }
@@ -284,69 +298,122 @@ function releaseEnemy(e, remove = true) {
 /* ==================================================== état du jeu */
 let time = 0;
 let state = 'title';
+let act = 1;
+const WEAPONS = {
+  pistol: { label: 'Pistolet', mag: 15, rate: 0.2, auto: false, dmg: 34, boatDmg: 20, head: 3, spread: 0.011, spreadAim: 0.0035, bloom: 0.01, recoil: 0.02, reload: 1.3 },
+  rifle: { label: 'Fusil d\'assaut', mag: 30, rate: 0.095, auto: true, dmg: 22, boatDmg: 14, head: 2.5, spread: 0.022, spreadAim: 0.007, bloom: 0.006, recoil: 0.012, reload: 2.1 },
+};
 const G = {
-  hp: 100, lastHit: -99, ammo: 15, mag: 15, reloading: 0, fireCd: 0, lastShot: -99,
-  wave: 0, queue: 0, kills: 0, checkpoint: null, startDist: 0, stateT: 0,
-  shake: 0, damageFx: 0, white: 0, fade: 1, hitmarker: 0, lowLine: -99, saidMid: false, saidBox: false,
-  ending: null,
+  hp: 100, lastHit: -99, reloading: 0, fireCd: 0, lastShot: -99, bloom: 0, trigger: false,
+  cur: 'pistol', inv: { pistol: { ammo: 15, reserve: Infinity }, rifle: null },
+  wave: 0, queue: 0, kills: 0, checkpoint: null, deckCheckpoint: 0, startDist: 0, stateT: 0,
+  shake: 0, damageFx: 0, white: 0, fade: 1, hitmarker: 0, hitKill: false, lowLine: -99, saidMid: false, saidBox: false,
+  ending: null, outro: null, wet: 0.4, playTime: 0,
+  stats: { shots: 0, hits: 0, heads: 0, deaths: 0 },
 };
 const WAVES = [
-  { at: 0.03, count: 2, line: ['Élias', 'Des projecteurs derrière nous… Ils nous ont retrouvés.'] },
-  { at: 0.33, count: 2, line: ['Élias', 'Encore deux bateaux ! À tribord !'] },
-  { at: 0.6, count: 3, line: ['Élias', 'Ils jettent tout ce qu\'ils ont dans la bataille !'] },
+  { at: 0.03, count: 2, line: 'w1' },
+  { at: 0.33, count: 2, line: 'w2' },
+  { at: 0.6, count: 3, line: 'w3' },
 ];
+const playing = () => state === 'play' || state === 'deck';
 
-const input = { keys: {}, lmb: false, rmb: false, mx: 0, my: 0, lastMouse: -99 };
+const input = { keys: {}, lmb: false, rmb: false, mx: 0, my: 0, lastMouse: -99, clicked: false };
 // commandes tactiles : joystick à gauche, regard au doigt à droite, boutons
 const touch = { on: false, jx: 0, jy: 0, fire: false, aim: false, boost: false };
 const aimHeld = () => input.rmb || touch.aim;
 const fireHeld = () => input.lmb || touch.fire;
 const cam = { yaw: 0, pitch: 0.16, dist: 9.5, heading: 0, aim: 0, tx: 0, ty: 0, tz: 0 };
+const assist = new AimAssist();
 
 /* ======================================================= audio */
 let audio = null;
+// voix et illustrations générées avec Higgsfield (voir tools/fetch-assets.mjs)
+let assets = { voices: [], art: {} };
+fetch('assets.json').then((r) => (r.ok ? r.json() : null)).then((a) => {
+  if (!a) return;
+  assets = a;
+  for (const [id, el] of [['title', 'title'], ['ch2', 'chapter'], ['end', 'end']]) {
+    const src = a.art?.[id];
+    if (!src) continue;
+    $(el).style.setProperty('--art', `url("${src}")`);
+    $(el).classList.add('has-art');
+  }
+  if (audio && a.voices?.length) audio.loadVoices(a.voices);
+}).catch(() => {});
 
-/* ===================================================== interface */
+/* ===================================================== répliques */
 const subs = $('subs');
 const subQueue = [];
-let subT = 0;
-function say(who, text, dur = 3.4) {
+let subT = 0, lastBark = -99;
+function say(id) {
+  if (!LINES[id]) return;
   if (subQueue.length > 2) subQueue.shift();
-  subQueue.push({ who, text, dur });
+  subQueue.push(id);
 }
 function updateSubs(dt) {
   subT -= dt;
-  if (subT <= 0) {
-    const s = subQueue.shift();
-    if (s) {
-      subs.innerHTML = `<b>${s.who}</b> ${s.text}`;
-      subs.classList.add('on');
-      subT = s.dur;
-    } else subs.classList.remove('on');
-  }
+  if (subT > 0) return;
+  const id = subQueue.shift();
+  if (!id) { subs.classList.remove('on'); return; }
+  const [who, text] = LINES[id];
+  const voiced = audio?.playVoice(id) || 0;
+  subT = voiced ? voiced + 0.35 : 1.3 + text.length * 0.055;
+  subs.innerHTML = `<b>${who}</b> ${text}`;
+  subs.classList.toggle('on', settings.subtitles);
+}
+// cris des mercenaires : voix radio, sans bloquer les répliques d'Élias
+function bark(id) {
+  if (time - lastBark < 5) return;
+  lastBark = time;
+  audio?.playVoice(id, rand(-0.6, 0.6));
 }
 function objective(text) {
   const o = $('objective');
   o.querySelector('span').textContent = text;
-  o.classList.remove('on'); void o.offsetWidth; o.classList.add('on');
+  o.classList.remove('on'); void o.offsetWidth; if (text) o.classList.add('on');
 }
+let toastT = 0;
+function toast(text) { const t = $('toast'); t.textContent = text; t.classList.add('on'); toastT = 2.6; }
 function setOverlay(id) {
   document.querySelectorAll('.overlay').forEach((el) => el.classList.toggle('show', el.id === id));
   document.body.classList.toggle('playing', id === null);
 }
 
+/* ===================================================== paramètres */
+let settingsReturn = 'title';
+bindSettingsForm($('settingsForm'), (key) => {
+  if (key === 'quality') applyQuality();
+  if (key === 'volume' || key === 'voice') audio?.setVolumes(settings.volume, settings.voice);
+  if (key === 'subtitles' && !settings.subtitles) subs.classList.remove('on');
+  $('assistBadge').textContent = assistLabel();
+});
+function assistLabel() { return { libre: 'Visée libre', assiste: 'Visée assistée', fort: 'Assistance forte' }[settings.assist]; }
+$('assistBadge').textContent = assistLabel();
+function openSettings(from) { settingsReturn = from; setOverlay('settings'); }
+$('openSettings').addEventListener('click', () => openSettings('title'));
+$('pauseSettings').addEventListener('click', () => openSettings('pause'));
+$('closeSettings').addEventListener('click', () => setOverlay(settingsReturn));
+
 /* ====================================================== contrôles */
 addEventListener('keydown', (e) => {
   input.keys[e.code] = true;
   if (state === 'intro' && (e.code === 'Space' || e.code === 'Enter')) startPlay();
-  if (e.code === 'KeyR' && state === 'play') reload();
-  if (e.code === 'KeyP' && (state === 'play' || state === 'pause')) togglePause();
+  if (state === 'wake' && (e.code === 'Space' || e.code === 'Enter')) G.stateT = Math.max(G.stateT, 7);
+  if (e.code === 'KeyR' && playing()) reload();
+  if (e.code === 'KeyP' && (playing() || state === 'pause')) togglePause();
+  if (state === 'deck') {
+    if (e.code === 'KeyC' || e.code === 'ControlLeft') deck.player.crouch = !deck.player.crouch;
+    if (e.code === 'Digit1') switchWeapon('pistol');
+    if (e.code === 'Digit2') switchWeapon('rifle');
+  }
 });
 addEventListener('keyup', (e) => { input.keys[e.code] = false; });
+addEventListener('wheel', (e) => { if (state === 'deck' && Math.abs(e.deltaY) > 4) switchWeapon(G.cur === 'pistol' ? 'rifle' : 'pistol'); }, { passive: true });
 canvas.addEventListener('mousedown', (e) => {
   if (touch.on) return;
-  if (state === 'play' && document.pointerLockElement !== canvas) lock();
-  if (e.button === 0) input.lmb = true;
+  if (playing() && document.pointerLockElement !== canvas) lock();
+  if (e.button === 0) { input.lmb = true; input.clicked = true; input.clickT = time; }
   if (e.button === 2) input.rmb = true;
   if (state === 'intro') startPlay();
 });
@@ -365,7 +432,12 @@ function setupTouch() {
   const pad = $('pad'), knob = $('knob');
   let padId = null, lookId = null, lx = 0, ly = 0, cx = 0, cy = 0;
   const R = 56;
-  const enable = () => { if (!touch.on) { touch.on = true; document.body.classList.add('touch'); } };
+  const enable = () => {
+    if (touch.on) return;
+    touch.on = true; document.body.classList.add('touch');
+    // première partie au tactile : l'assistance forte est plus confortable
+    if (!localStorageHas()) { settings.assist = 'fort'; $('assistBadge').textContent = assistLabel(); }
+  };
   addEventListener('touchstart', enable, { passive: true, capture: true });
   pad.addEventListener('touchstart', (e) => {
     e.preventDefault();
@@ -381,6 +453,7 @@ function setupTouch() {
   };
   canvas.addEventListener('touchstart', (e) => {
     if (state === 'intro') { startPlay(); return; }
+    if (state === 'wake') { G.stateT = Math.max(G.stateT, 7); return; }
     const t = e.changedTouches[0];
     if (lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY; }
   }, { passive: true });
@@ -408,25 +481,30 @@ function setupTouch() {
     el.addEventListener('touchend', up); el.addEventListener('touchcancel', up);
   };
   hold('tFire', 'fire'); hold('tBoost', 'boost');
-  $('tAim').addEventListener('touchstart', (e) => { e.preventDefault(); touch.aim = !touch.aim; $('tAim').classList.toggle('on', touch.aim); }, { passive: false });
-  $('tReload').addEventListener('touchstart', (e) => { e.preventDefault(); if (state === 'play') reload(); }, { passive: false });
-  $('tPause').addEventListener('touchstart', (e) => { e.preventDefault(); togglePause(); }, { passive: false });
+  const tap = (id, fn) => $(id).addEventListener('touchstart', (e) => { e.preventDefault(); fn(); }, { passive: false });
+  tap('tAim', () => { touch.aim = !touch.aim; $('tAim').classList.toggle('on', touch.aim); });
+  tap('tReload', () => { if (playing()) reload(); });
+  tap('tPause', () => togglePause());
+  tap('tCrouch', () => { if (state === 'deck') { deck.player.crouch = !deck.player.crouch; $('tCrouch').classList.toggle('on', deck.player.crouch); } });
+  tap('tSwap', () => switchWeapon(G.cur === 'pistol' ? 'rifle' : 'pistol'));
 }
+function localStorageHas() { try { return !!localStorage.getItem('tempete.settings.v1'); } catch { return false; } }
 function lock() { if (touch.on) return; try { const p = canvas.requestPointerLock?.(); p?.catch?.(() => {}); } catch { /* ignoré */ } }
 document.addEventListener('pointerlockchange', () => {
   if (document.pointerLockElement === canvas) { hadLock = true; lockedAt = performance.now(); }
-  else if (hadLock && state === 'play') togglePause();
+  else if (hadLock && playing()) togglePause();
 });
+let pausedFrom = 'play';
 function togglePause() {
-  if (state === 'play') { state = 'pause'; setOverlay('pause'); audio?.suspend(); }
-  else if (state === 'pause') { state = 'play'; setOverlay(null); audio?.resume(); lock(); }
+  if (playing()) { pausedFrom = state; state = 'pause'; setOverlay('pause'); audio?.suspend(); }
+  else if (state === 'pause') { state = pausedFrom; setOverlay(null); audio?.resume(); lock(); }
 }
 $('resume').addEventListener('click', togglePause);
 $('play').addEventListener('click', startGame);
 $('retry').addEventListener('click', respawn);
 $('again').addEventListener('click', () => location.reload());
 
-/* ======================================================= mission */
+/* ======================================================= chapitre 1 */
 function resetWorld() {
   player.x = 0; player.z = 0; player.heading = 0.04; player.speed = 8; player.y = 0; player.vy = 0;
   G.startDist = Math.hypot(SHIP.x - player.x, SHIP.z - player.z);
@@ -436,17 +514,19 @@ function resetWorld() {
 function startGame() {
   if (state !== 'title') return;
   document.activeElement?.blur?.();
-  if (!audio) { try { audio = new StormAudio(); } catch { audio = null; } }
+  if (!audio) {
+    try { audio = new StormAudio(); } catch { audio = null; }
+    if (audio) { audio.setVolumes(settings.volume, settings.voice); audio.loadVoices(assets.voices || []); }
+  }
   audio?.resume();
   lightning.audio = audio;
+  if (params.get('chapitre') === '2' && DEBUG) { startChapter2(true); return; }
   resetWorld();
   state = 'intro'; G.stateT = 0; G.fade = 1;
   setOverlay(null);
   document.body.classList.add('cinema');
   $('intro').classList.add('show');
-  say('Élias', 'Tiens bon ! On n\'est plus très loin.', 3.2);
-  say('Élias', 'Le cargo, là-bas… droit devant. Si on l\'atteint, on les sème.', 4);
-  say('Élias', 'Mets les gaz. Je surveille nos arrières.', 3.2);
+  say('i1'); say('i2'); say('i3');
 }
 
 function startPlay() {
@@ -465,24 +545,58 @@ function progress() {
 }
 
 function respawn() {
+  G.stats.deaths++;
+  G.hp = 100; G.reloading = 0; G.damageFx = 0; G.bloom = 0;
+  const p = G.inv.pistol; p.ammo = WEAPONS.pistol.mag;
+  setOverlay(null);
+  audio?.resume();
+  lock();
+  if (act === 2) {
+    p.reserve = Math.max(p.reserve, 45);
+    if (G.inv.rifle) { G.inv.rifle.ammo = WEAPONS.rifle.mag; G.inv.rifle.reserve = Math.max(G.inv.rifle.reserve, 60); }
+    deck.start(G.deckCheckpoint);
+    state = 'deck'; G.stateT = 0; G.fade = 0;
+    say('r1');
+    return;
+  }
   const c = G.checkpoint;
   for (const e of [...enemies]) releaseEnemy(e);
   player.x = c.x; player.z = c.z; player.heading = c.h; player.speed = 10; player.vy = 0;
   player.y = heightAt(c.x, c.z, time);
   playerWake.reset();
-  G.hp = 100; G.ammo = G.mag; G.reloading = 0; G.damageFx = 0;
   G.wave = c.wave; G.queue = 0;
   if (c.wave > 0) G.queue = WAVES[c.wave - 1].count;
   state = 'play'; G.stateT = 0; G.fade = 0;
-  setOverlay(null);
-  audio?.resume();
-  lock();
-  say('Élias', 'On recommence. Reste concentré.', 2.6);
+  say('r1');
 }
 
+/* ======================================================== armes */
 function reload() {
-  if (G.reloading > 0 || G.ammo === G.mag) return;
-  G.reloading = 1.3;
+  const W = WEAPONS[G.cur], inv = G.inv[G.cur];
+  if (G.reloading > 0 || inv.ammo === W.mag || inv.reserve <= 0) return;
+  G.reloading = W.reload;
+  audio?.reload();
+}
+function finishReload() {
+  const W = WEAPONS[G.cur], inv = G.inv[G.cur];
+  const take = Math.min(W.mag - inv.ammo, inv.reserve);
+  inv.ammo += take;
+  if (inv.reserve !== Infinity) inv.reserve -= take;
+}
+function switchWeapon(kind) {
+  if (kind === G.cur || !G.inv[kind]) return;
+  G.cur = kind; G.reloading = 0; G.fireCd = 0.35;
+  setWeapon(hero, kind);
+  audio?.click();
+  toast(WEAPONS[kind].label);
+}
+function pickup(kind) {
+  if (kind === 'rifle') {
+    G.inv.rifle = { ammo: WEAPONS.rifle.mag, reserve: 30 };
+    switchWeapon('rifle');
+    toast('Fusil d\'assaut récupéré — 2 ou molette pour changer d\'arme');
+  } else if (kind === 'rifleAmmo' && G.inv.rifle) { G.inv.rifle.reserve += 30; toast('+30 munitions de fusil'); }
+  else { G.inv.pistol.reserve += 15; toast('+15 munitions de pistolet'); }
   audio?.reload();
 }
 
@@ -513,6 +627,34 @@ function sparks(p) {
     fire.emit(p.x, p.y, p.z, rand(-5, 5), rand(0, 6), rand(-5, 5),
       { life: rand(0.15, 0.35), size: 0.12, size1: 0.02, r: 8, g: 5, b: 2, grav: 12 });
   }
+  smoke.emit(p.x, p.y, p.z, rand(-0.3, 0.3), rand(0.3, 0.8), rand(-0.3, 0.3),
+    { life: 0.9, size: 0.2, size1: 1.0, r: 0.25, g: 0.24, b: 0.22, a: 0.4, grav: -0.2, drag: 1 });
+}
+
+function blood(p) {
+  for (let i = 0; i < 7; i++) {
+    smoke.emit(p.x, p.y, p.z, rand(-1, 1), rand(-0.2, 1), rand(-1, 1),
+      { life: rand(0.25, 0.5), size: 0.12, size1: 0.45, r: 0.16, g: 0.02, b: 0.02, a: 0.7, grav: 3, drag: 2 });
+  }
+}
+
+function muzzleFlash(p, d) {
+  muzzleLight.position.copy(p);
+  muzzleLight.intensity = act === 2 ? 45 : 250;
+  for (let i = 0; i < 5; i++) {
+    fire.emit(p.x, p.y, p.z, (d?.x || 0) * 6 + rand(-1, 1), (d?.y || 0) * 6 + rand(-1, 1), (d?.z || 0) * 6 + rand(-1, 1),
+      { life: 0.06, size: 0.32, size1: 0.1, r: 9, g: 6, b: 2.5 });
+  }
+}
+
+// paquet de mer qui balaie le pont (chapitre 2)
+function waveFx(p, inward) {
+  for (let i = 0; i < 160; i++) {
+    const s = rand(3, 9);
+    spray.emit(p.x + rand(-4, 4), p.y + rand(-0.5, 0.5), p.z + rand(-4, 4),
+      inward.x * s + rand(-1.5, 1.5), rand(4, 10), inward.z * s + rand(-1.5, 1.5),
+      { life: rand(0.8, 1.6), size: 0.5, size1: rand(2, 3.5), r: 0.6, g: 0.66, b: 0.7, a: 0.45, grav: 9.8, drag: 0.4 });
+  }
 }
 
 function explode(p, big = 1) {
@@ -537,8 +679,9 @@ function explode(p, big = 1) {
   audio?.explosion(clamp(1.3 - d / 300, 0.3, 1.2));
 }
 
+const KILL_LINES = ['k1', 'k2', 'k3', 'k4'];
 function damageEnemy(e, dmg, at) {
-  if (!e.alive) return;
+  if (!e.alive) return false;
   e.hp -= dmg;
   sparks(at);
   if (e.hp <= 0) {
@@ -546,26 +689,34 @@ function damageEnemy(e, dmg, at) {
     explode(_v.set(e.boat.x, e.boat.y, e.boat.z));
     e.slot.light.intensity = 0; e.slot.beam.visible = false;
     G.kills++;
-    const lines = ['Un de moins !', 'Joli tir !', 'Ça, c\'est fait.', 'Bien joué, petit frère.', 'Ils coulent !'];
-    if (Math.random() < 0.75) say('Élias', lines[(Math.random() * lines.length) | 0], 2.2);
+    if (Math.random() < 0.75) say(Math.random() < 0.3 ? 'k5' : KILL_LINES[(Math.random() * 4) | 0]);
+    return true;
   }
+  return false;
 }
 
-function playerShoot() {
-  if (G.reloading > 0 || G.fireCd > 0) return;
-  if (G.ammo <= 0) { audio?.click(); reload(); G.fireCd = 0.3; return; }
-  G.ammo--; G.fireCd = 0.2; G.lastShot = time;
-  hero.userData.anim.recoil = 1;
-  camera.getWorldDirection(_d);
-  const spread = aimHeld() ? 0.004 : 0.018;
-  _d.x += rand(-spread, spread); _d.y += rand(-spread, spread); _d.z += rand(-spread, spread);
-  _d.normalize();
-  _o.copy(camera.position);
+// cibles de l'assistance à la visée (coordonnées monde)
+function currentTargets() {
+  if (act === 2) return deck.targets();
+  const list = [];
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    list.push({ chest: new THREE.Vector3(e.boat.x, e.boat.y + 1.3, e.boat.z), head: null, ref: e });
+  }
+  return list;
+}
+const losFn = (p) => (act === 2 ? deck.losWorld(camera.position, p) : true);
+function rotateView(dyaw, dpitch) {
+  if (act === 2) deck.rotateView(dyaw, dpitch);
+  else { cam.yaw += dyaw; cam.pitch = clamp(cam.pitch - dpitch, -0.35, 0.95); }
+}
+
+function boatShot(o, d) {
   let best = null, bestT = Infinity;
   for (const e of enemies) {
     if (!e.alive) continue;
-    _v.set(e.boat.x, e.boat.y + 1.3, e.boat.z).sub(_o);
-    const tc = _v.dot(_d);
+    _v.set(e.boat.x, e.boat.y + 1.3, e.boat.z).sub(o);
+    const tc = _v.dot(d);
     if (tc < 0) continue;
     const d2 = _v.lengthSq() - tc * tc;
     const r = 2.7;
@@ -574,37 +725,61 @@ function playerShoot() {
       if (t < bestT) { bestT = t; best = e; }
     }
   }
+  if (best && bestT < 260) return { point: o.clone().addScaledVector(d, bestT), enemy: best, head: false, surface: 'boat' };
+  const hit = waterHit(o, d);
+  return hit ? { point: hit, enemy: null, surface: 'water' } : { point: o.clone().addScaledVector(d, 400), enemy: null, surface: 'none' };
+}
+
+function playerShoot() {
+  const W = WEAPONS[G.cur], inv = G.inv[G.cur];
+  if (G.reloading > 0 || G.fireCd > 0) return;
+  if (inv.ammo <= 0) {
+    audio?.click(); G.fireCd = 0.3;
+    if (inv.reserve > 0) reload(); else if (G.cur === 'rifle') switchWeapon('pistol');
+    return;
+  }
+  inv.ammo--; G.fireCd = W.rate * (touch.on && !W.auto ? 1.5 : 1); G.lastShot = time;
+  G.stats.shots++;
+  hero.userData.anim.recoil = 1;
+  const fwd = camera.getWorldDirection(new THREE.Vector3());
+  const origin = camera.position.clone();
+  const sp = (aimHeld() ? W.spreadAim : W.spread) + G.bloom;
+  G.bloom = Math.min(0.045, G.bloom + W.bloom);
+  const dir = fwd.clone();
+  dir.x += rand(-sp, sp); dir.y += rand(-sp, sp); dir.z += rand(-sp, sp);
+  dir.normalize();
+  assist.bend(origin, fwd, dir, currentTargets(), losFn);
+  const res = act === 2 ? deck.resolveShot(origin, dir) : boatShot(origin, dir);
   hero.userData.muzzle.getWorldPosition(_m);
-  let hit;
-  if (best && bestT < 260) {
-    hit = _o.clone().addScaledVector(_d, bestT);
-    damageEnemy(best, 20, hit);
-    G.hitmarker = 0.18;
+  if (res.enemy) {
+    G.stats.hits++;
+    if (res.head) G.stats.heads++;
+    let killed;
+    if (act === 2) {
+      blood(res.point);
+      killed = deck.damage(res.enemy, W.dmg * (res.head ? W.head : 1), res.head, res.point);
+      if (killed) { G.kills++; if (Math.random() < 0.55) say(KILL_LINES[(Math.random() * 4) | 0]); }
+    } else killed = damageEnemy(res.enemy, W.boatDmg, res.point);
+    G.hitmarker = 0.2; G.hitKill = killed; G.hitHead = res.head;
     audio?.impact();
-  } else {
-    hit = waterHit(_o, _d) || _o.clone().addScaledVector(_d, 400);
-    if (hit.distanceTo(_o) < 399) splash(hit, 0.6);
-  }
-  tracers.fire(_m, hit, [7, 5, 2.4], 520);
-  muzzleLight.position.copy(_m);
-  muzzleLight.intensity = 250;
-  for (let i = 0; i < 6; i++) {
-    fire.emit(_m.x, _m.y, _m.z, _d.x * 6 + rand(-1, 1), _d.y * 6 + rand(-1, 1), _d.z * 6 + rand(-1, 1),
-      { life: 0.06, size: 0.35, size1: 0.1, r: 9, g: 6, b: 2.5 });
-  }
-  G.shake = Math.max(G.shake, 0.12);
-  audio?.gunshot(1, 0);
-  if (G.ammo === 0) setTimeout(reload, 250);
+  } else if (res.surface === 'metal') { sparks(res.point); audio?.metal(0.35, 0); } else if (res.surface === 'water') splash(res.point, 0.6);
+  tracers.fire(_m, res.point, [7, 5, 2.4], 520);
+  muzzleFlash(_m, dir);
+  // recul : le canon remonte, un peu de dérive latérale
+  rotateView(rand(-1, 1) * W.recoil * 0.35, W.recoil * (aimHeld() ? 0.7 : 1));
+  G.shake = Math.max(G.shake, 0.1);
+  if (G.cur === 'rifle') audio?.rifle(0.95, 0); else audio?.gunshot(1, 0);
+  if (inv.ammo === 0 && inv.reserve > 0) setTimeout(reload, 250);
 }
 
 function damagePlayer(d) {
-  if (state !== 'play') return;
+  if (!playing()) return;
   G.hp -= d; G.lastHit = time;
   G.shake = Math.max(G.shake, 0.25);
   audio?.impact();
   if (G.hp < 35 && time - G.lowLine > 14) {
     G.lowLine = time;
-    say('Élias', ['Baisse la tête, bon sang !', 'Tu saignes ! Mets-toi à couvert !'][(Math.random() * 2) | 0], 2.4);
+    say(Math.random() < 0.5 ? 'h1' : 'h2');
   }
   if (G.hp <= 0) {
     G.hp = 0;
@@ -613,7 +788,7 @@ function damagePlayer(d) {
   }
 }
 
-/* ===================================================== IA ennemie */
+/* ===================================================== IA ennemie (chapitre 1) */
 function updateEnemies(dt) {
   const camPan = new THREE.Vector3();
   for (const e of [...enemies]) {
@@ -641,7 +816,7 @@ function updateEnemies(dt) {
     const want = Math.atan2(dx, dz);
     const steer = clamp(wrapAngle(want - b.heading) * 1.6, -1, 1);
     const dist = Math.hypot(player.x - b.x, player.z - b.z);
-    let throttle = dTarget > 25 ? 1 : clamp(Math.abs(player.speed) / b.maxSpeed + dTarget / 60, 0.2, 1);
+    const throttle = dTarget > 25 ? 1 : clamp(Math.abs(player.speed) / b.maxSpeed + dTarget / 60, 0.2, 1);
     b.update(dt, time, throttle, steer, dist > 90);
 
     // évitement entre bateaux
@@ -666,8 +841,7 @@ function updateEnemies(dt) {
     const align = Math.abs(camF.dot(_d));
     const near = clamp((off - Math.max(0, along) * 0.18 - 2) / 12, 0, 1);
     e.slot.beam.material.uniforms.uInt.value = near * (1 - THREE.MathUtils.smoothstep(align, 0.45, 0.85)) * (state === 'finale' ? 0 : 1);
-    const lens = e.obj.userData.lens;
-    lens.lookAt(e.aim);
+    e.obj.userData.lens.lookAt(e.aim);
 
     // tireur
     const gunner = e.obj.userData.gunner;
@@ -697,9 +871,8 @@ function updateEnemies(dt) {
         const chance = clamp(0.4 - dist / 330 - Math.abs(player.speed) / 110 - (player.air > 0.1 ? 0.15 : 0), 0.05, 0.38);
         gunner.userData.muzzle.getWorldPosition(_m);
         _m.add(_d.set(player.x - b.x, 0, player.z - b.z).normalize().multiplyScalar(0.6));
-        const hitP = Math.random() < chance;
         let to;
-        if (hitP) {
+        if (Math.random() < chance) {
           to = new THREE.Vector3(player.x + rand(-0.5, 0.5), player.y + 1.3, player.z + rand(-0.5, 0.5));
           damagePlayer(rand(6, 9));
         } else {
@@ -739,7 +912,7 @@ function emitWakeSpray(b, k = 1) {
 }
 
 player.onSlam = (k) => {
-  G.wet = Math.min(1.4, (G.wet ?? 0.4) + 0.5 * k);
+  G.wet = Math.min(1.4, G.wet + 0.5 * k);
   G.shake = Math.max(G.shake, 0.35 * k);
   audio?.slam(k);
   for (let i = 0; i < 70 * k; i++) {
@@ -776,12 +949,12 @@ function collide(b) {
   }
 }
 
-/* ================================================== caméra */
-function updateCamera(dt) {
+/* ================================================== caméra (chapitre 1) */
+function updateCamera(dt, sens) {
   const aimK = (aimHeld() && state === 'play') ? 1 : 0;
   cam.aim += (aimK - cam.aim) * (1 - Math.exp(-10 * dt));
-  cam.yaw -= input.mx * 0.0023 * (1 - cam.aim * 0.45);
-  cam.pitch = clamp(cam.pitch + input.my * 0.0019 * (1 - cam.aim * 0.45), -0.35, 0.95);
+  cam.yaw -= input.mx * 0.0023 * (1 - cam.aim * 0.45) * sens;
+  cam.pitch = clamp(cam.pitch + input.my * 0.0019 * (1 - cam.aim * 0.45) * sens * (settings.invertY ? -1 : 1), -0.35, 0.95);
   input.mx = input.my = 0;
 
   if (time - input.lastMouse > 1.8 && cam.aim < 0.1 && player.speed > 3 && state === 'play') {
@@ -799,8 +972,8 @@ function updateCamera(dt) {
   cam.ty += (player.y - cam.ty) * (1 - Math.exp(-5 * dt));
   const tx = cam.tx + sx * shoulder, ty = cam.ty + 2.4, tz = cam.tz + sz * shoulder;
   const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
-  let px = tx - Math.sin(a) * dist * cp, py = ty + dist * sp, pz = tz - Math.cos(a) * dist * cp;
-  py = Math.max(py, heightAt(px, pz, time) + 0.9);
+  const px = tx - Math.sin(a) * dist * cp, pz = tz - Math.cos(a) * dist * cp;
+  const py = Math.max(ty + dist * sp, heightAt(px, pz, time) + 0.9);
   camera.position.set(px, py, pz);
   camera.lookAt(tx + Math.sin(a) * 4 * cp, ty - sp * 4 + 0.4, tz + Math.cos(a) * 4 * cp);
 
@@ -842,6 +1015,170 @@ function pushLights() {
   });
 }
 
+/* ================================================== chapitre 2 : le cargo */
+const deck = new DeckAct({
+  scene, camera, ship, hero, brother, tracers, spotPool: SPOT_POOL, G,
+  get audio() { return audio; },
+  time: () => time,
+  say, bark, objective, damagePlayer,
+  fx: { sparks, flash: (p) => muzzleFlash(p, null), wave: waveFx },
+  checkpoint: (k) => { G.deckCheckpoint = k; },
+  pickup,
+  finish: () => startOutro(),
+});
+
+function startChapter2(direct = false) {
+  act = 2;
+  // à bout portant, les projecteurs réglés pour être vus de loin écrasent tout
+  for (const f of ship.userData.floods) f.intensity = 5000;
+  ship.userData.lights.forEach((l, i) => { l.intensity = i ? 500 : 900; });
+  state = 'chapter'; G.stateT = 0;
+  document.exitPointerLock?.();
+  setOverlay('chapter');
+  for (const e of [...enemies]) releaseEnemy(e);
+  playerObj.visible = false; playerWake.mesh.visible = false;
+  for (const c of containers) c.m.visible = false;
+  sea.rogue.h = 0; sea.amp = 1.05;
+  G.white = 0; G.fade = 1; G.hp = 100;
+  G.inv.pistol.ammo = WEAPONS.pistol.mag; G.inv.pistol.reserve = 45;
+  G.reloading = 0;
+  subQueue.length = 0; subT = 0;
+  deck.start(0);
+  document.body.classList.add('act2', 'cinema');
+  if (direct) G.stateT = 3.5;
+}
+
+// réveil sur le pont : plan rapproché, puis la main passe au joueur
+function updateWake(dt, talk = true) {
+  const T = talk ? G.stateT : 0;
+  G.fade = clamp(1 - T * 0.6, 0, 1);
+  const lie = 1 - THREE.MathUtils.smoothstep(T, 2.6, 4.2);
+  const P = deck.player.pos;
+  hero.position.copy(P);
+  hero.rotation.set(-Math.PI / 2 * lie, Math.PI, 0, 'YXZ');
+  animateCharacter(hero, dt, { t: time, crouch: lie * 0.6 });
+  brother.position.set(P.x - 0.9, P.y, P.z - 0.6);
+  brother.rotation.set(0, Math.PI * 0.6, 0, 'YXZ');
+  animateCharacter(brother, dt, { t: time, crouch: 1 - THREE.MathUtils.smoothstep(T, 3.5, 5) });
+  const from = deck.toWorld(new THREE.Vector3(P.x + 2.6 - T * 0.15, P.y + 0.7 + T * 0.18, P.z + 1.8));
+  const look = deck.toWorld(new THREE.Vector3(P.x - 0.4, P.y + 0.6 + (1 - lie) * 0.8, P.z - 0.2));
+  camera.position.copy(from); camera.up.set(0, 1, 0); camera.lookAt(look);
+  camera.fov = 50; camera.updateProjectionMatrix();
+  if (!talk) return;
+  if (T > 0.4 && !G.saidD1) { G.saidD1 = true; say('d1'); }
+  if (T > 4.4 && !G.saidD2) { G.saidD2 = true; say('d2'); }
+  if (T > 9) startDeck();
+}
+function startDeck() {
+  state = 'deck'; G.stateT = 0; G.fade = 0;
+  setOverlay(null);
+  document.body.classList.remove('cinema');
+  objective('Atteins la passerelle du cargo');
+  say('d3');
+  deck.cam.yaw = Math.PI; deck.cam.pitch = 0.12;
+  lock();
+}
+
+/* ------------------------------------------------ fin : le canot de sauvetage */
+function startOutro() {
+  if (state !== 'deck') return;
+  state = 'outro'; G.stateT = 0;
+  subQueue.length = 0; subT = 0;
+  document.exitPointerLock?.();
+  document.body.classList.add('cinema');
+  objective('');
+  G.outro = { said: {}, falling: [], lb: null, baseY: ship.position.y };
+  for (const s of SPOT_POOL) { s.light.intensity = 0; s.beam.visible = false; }
+}
+
+function updateOutro(dt) {
+  const T = G.stateT, O = G.outro;
+  const once = (k, fn) => { if (!O.said[k]) { O.said[k] = true; fn(); } };
+  if (T < 0.8) G.fade = T / 0.8;
+  else if (T < 4.2) G.fade = 1;
+  else if (T < 5.4) G.fade = 1 - (T - 4.2) / 1.2;
+  else if (T > 19) G.fade = clamp((T - 19) / 1.4, 0, 1);
+  else G.fade = 0;
+  once('door', () => audio?.door());
+  if (T > 1) once('e1', () => say('e1'));
+  const side = new THREE.Vector3(Math.cos(SHIP.yaw), 0, -Math.sin(SHIP.yaw)); // tribord du cargo, côté du canot
+  if (T > 4.2) once('setup', () => {
+    hero.visible = brother.visible = false;
+    const lb = ship.userData.lifeboat;
+    scene.attach(lb);
+    O.lb = lb; O.lbY = lb.position.y;
+    // des conteneurs glissent par-dessus bord
+    for (let i = 0; i < 7; i++) {
+      const m = makeFloatingContainer();
+      const z = rand(-30, 45), lv = (Math.random() * 3) | 0;
+      const p = deck.toWorld(new THREE.Vector3(10.5, ship.userData.deckY + 1.3 + lv * 2.6, z));
+      m.position.copy(p);
+      m.rotation.set(0, SHIP.yaw, 0);
+      scene.add(m);
+      O.falling.push({ m, v: side.clone().multiplyScalar(rand(2, 4)).setY(rand(0, 1.5)), spin: rand(-0.8, 0.8), delay: rand(0, 4), floating: false });
+    }
+    lightning.next = 0.3;
+  });
+  if (T > 5.6) once('e2', () => say('e2'));
+  if (T > 13) once('e3', () => say('e3'));
+  if (T > 11) once('flash2', () => { lightning.next = 0.2; });
+  if (T > 20.6) once('end', showEnd);
+
+  if (O.lb) {
+    const lb = O.lb, k = clamp((T - 4.2) / 3, 0, 1);
+    const water = heightAt(lb.position.x, lb.position.z, time);
+    if (k < 1) lb.position.y = THREE.MathUtils.lerp(O.lbY, water + 0.3, k * k);
+    else {
+      lb.position.y += (water + 0.3 - lb.position.y) * (1 - Math.exp(-4 * dt));
+      lb.position.addScaledVector(side, 2.4 * dt);
+      lb.rotation.set(Math.sin(time * 0.9) * 0.08, SHIP.yaw + 0.3, Math.cos(time * 0.7) * 0.12, 'YXZ');
+    }
+    for (const f of O.falling) {
+      f.delay -= dt;
+      if (f.delay > 0) continue;
+      const w = heightAt(f.m.position.x, f.m.position.z, time);
+      if (!f.floating) {
+        f.v.y -= 9.8 * dt;
+        f.m.position.addScaledVector(f.v, dt);
+        f.m.rotation.z += f.spin * dt;
+        if (f.m.position.y < w) { f.floating = true; splash(f.m.position, 3); audio?.slam(0.6); }
+      } else {
+        f.m.position.y += (w - 0.6 - f.m.position.y) * (1 - Math.exp(-2 * dt));
+        f.m.position.addScaledVector(side, 0.6 * dt);
+      }
+    }
+    // caméra : plan large depuis la mer, puis on se rapproche du canot
+    const shipC = ship.position.clone();
+    const wide = shipC.clone().addScaledVector(side, 95).add(new THREE.Vector3(Math.sin(SHIP.yaw) * -40, 9, Math.cos(SHIP.yaw) * -40));
+    const close = lb.position.clone().addScaledVector(side, 16).add(new THREE.Vector3(Math.sin(SHIP.yaw) * 7, 3.5, Math.cos(SHIP.yaw) * 7));
+    const u = THREE.MathUtils.smoothstep(T, 11, 17);
+    const from = wide.lerp(close, u);
+    from.y = Math.max(from.y, heightAt(from.x, from.z, time) + 1.5);
+    const look = shipC.clone().setY(shipC.y + 10).lerp(lb.position.clone().setY(lb.position.y + 1), u * 0.85);
+    cinematicCamera(from, look, T < 5 ? 1 : 1 - Math.exp(-2 * dt));
+    camera.fov = 52; camera.updateProjectionMatrix();
+  } else {
+    camera.position.copy(camera.position);
+  }
+}
+
+function showEnd() {
+  state = 'end';
+  subQueue.length = 0; subs.classList.remove('on');
+  setOverlay('end');
+  const s = G.stats;
+  const mins = Math.floor(G.playTime / 60), secs = Math.floor(G.playTime % 60);
+  const acc = s.shots ? Math.round((s.hits / s.shots) * 100) : 0;
+  $('stat').innerHTML = `
+    <div><dt>Durée</dt><dd>${mins} min ${String(secs).padStart(2, '0')} s</dd></div>
+    <div><dt>Ennemis neutralisés</dt><dd>${G.kills}</dd></div>
+    <div><dt>Précision</dt><dd>${acc} %</dd></div>
+    <div><dt>Tirs à la tête</dt><dd>${s.heads}</dd></div>
+    <div><dt>Morts</dt><dd>${s.deaths}</dd></div>
+    <div><dt>Visée</dt><dd class="txt">${assistLabel()}</dd></div>`;
+  audio?.suspend();
+}
+
 /* ================================================== boucle */
 const lightning = new Lightning(scene, env, null);
 const timer = new THREE.Timer();
@@ -851,7 +1188,7 @@ cam.heading = player.heading;
 camera.position.set(-12, 4, -14);
 
 function particleScale() {
-  const h = innerHeight * quality;
+  const h = innerHeight * pixelRatio;
   const s = h / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
   spray.uniforms.uScale.value = smoke.uniforms.uScale.value = fire.uniforms.uScale.value = s;
 }
@@ -860,82 +1197,135 @@ function frame(now) {
   requestAnimationFrame(frame);
   timer.update(now);
   let dt = Math.min(timer.getDelta(), 1 / 20);
-  if (state === 'pause') { composer.render(); return; }
+  if (state === 'pause' || state === 'settings') { composer.render(); return; }
   if (state === 'dead') dt *= 0.35;
   time += dt;
   G.stateT += dt;
+  if (playing()) G.playTime += dt;
   env.uTime.value = time;
-
-  // pilotage
-  let throttle = 0, steer = 0, boost = false;
   const k = input.keys;
-  if (state === 'play') {
-    throttle = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
-    steer = (k.KeyA || k.ArrowLeft ? 1 : 0) - (k.KeyD || k.ArrowRight ? 1 : 0);
-    if (touch.on) {
-      throttle = clamp(throttle - touch.jy * 1.25, -1, 1);
-      steer = clamp(steer - touch.jx * 1.25, -1, 1);
-    }
-    boost = (!!(k.ShiftLeft || k.ShiftRight) || touch.boost) && throttle > 0;
-    if (fireHeld()) playerShoot();
-  } else if (state === 'intro' || state === 'title') {
-    throttle = 0.55; steer = Math.sin(time * 0.3) * 0.15;
-  } else if (state === 'finale') {
-    throttle = 0.75; steer = clamp(wrapAngle(G.ending.heading - player.heading) * 1.5, -1, 1);
-  }
-  player.update(dt, time, throttle, steer, boost);
-  if (state !== 'title') collide(player);
 
-  // personnages
-  const camDir = camera.getWorldDirection(_d);
-  const aimYaw = Math.atan2(camDir.x, camDir.z);
-  const aiming = aimHeld() || time - G.lastShot < 1.2;
-  const heroYaw = aiming && state === 'play' ? wrapAngle(aimYaw - player.heading) : 0;
-  hero.rotation.y += wrapAngle(heroYaw - hero.rotation.y) * (1 - Math.exp(-12 * dt));
-  animateCharacter(hero, dt, { aim: aiming && state === 'play', pitch: Math.asin(clamp(camDir.y, -1, 1)) + 0.05, heave: player.vy, roll: player.roll, t: time });
-
-  // le frère couvre l'arrière et tire sur l'ennemi le plus proche
-  let near = null, nd = 1e9;
-  for (const e of enemies) {
-    if (!e.alive) continue;
-    const d = Math.hypot(e.boat.x - player.x, e.boat.z - player.z);
-    if (d < nd) { nd = d; near = e; }
-  }
-  const bTarget = near ? wrapAngle(Math.atan2(near.boat.x - player.x, near.boat.z - player.z) - player.heading) : Math.PI;
-  brother.rotation.y += wrapAngle(bTarget - brother.rotation.y) * (1 - Math.exp(-4 * dt));
-  animateCharacter(brother, dt, { aim: !!near, pitch: -0.05, heave: player.vy, roll: player.roll, t: time });
-  G.brotherCd = (G.brotherCd ?? 2) - dt;
-  if (near && nd < 120 && G.brotherCd <= 0 && state === 'play') {
-    G.brotherCd = rand(1.1, 2.0);
-    brother.userData.anim.recoil = 1;
-    brother.userData.muzzle.getWorldPosition(_m);
-    const hitIt = Math.random() < 0.32;
-    const to = new THREE.Vector3(near.boat.x + (hitIt ? 0 : rand(-5, 5)), near.boat.y + (hitIt ? 1.2 : 0), near.boat.z + (hitIt ? 0 : rand(-5, 5)));
-    if (!hitIt) { to.y = heightAt(to.x, to.z, time); splash(to, 0.5); }
-    tracers.fire(_m, to, [7, 5, 2.4], 500);
-    audio?.gunshot(0.6, 0);
-    if (hitIt) damageEnemy(near, 12, to);
-  }
-
-  // mission
-  if (state === 'play') updateMission(dt);
-  if (state === 'finale') updateFinale(dt);
-  updateEnemies(dt);
-
-  // conteneurs et cargo
-  for (const c of containers) {
-    const h = heightAt(c.x, c.z, time);
-    c.m.position.set(c.x, h - 0.5, c.z);
-    c.m.rotation.set(Math.sin(time * 0.8 + c.ph) * 0.12, c.yaw, Math.cos(time * 0.6 + c.ph) * 0.15, 'YXZ');
-  }
-  ship.position.y = heightAt(SHIP.x, SHIP.z, time) * 0.3 - 0.5;
-  ship.rotation.set(Math.sin(time * 0.21) * 0.012, SHIP.yaw, Math.sin(time * 0.27) * 0.045 + 0.03, 'YXZ');
+  // cargo : roulis (atténué à pied, puis il se couche à la fin)
+  const outroRoll = state === 'outro' ? clamp((G.stateT - 4.2) * 0.03, 0, 0.3) : 0;
+  const rollAmp = act === 2 ? 0.02 : 0.045;
+  ship.position.y = heightAt(SHIP.x, SHIP.z, time) * (act === 2 ? 0.15 : 0.3) - 0.5 - (state === 'outro' ? Math.max(0, G.stateT - 4.2) * 0.3 : 0);
+  ship.rotation.set(Math.sin(time * 0.21) * 0.01, SHIP.yaw, Math.sin(time * 0.27) * rollAmp + 0.03 + outroRoll, 'YXZ');
   ship.userData.redTop.visible = Math.sin(time * 3) > 0;
+  ship.updateMatrixWorld(true);
+
+  // assistance à la visée (avant la caméra, sur la vue de la frame précédente)
+  let sens = settings.sensitivity;
+  if (playing()) {
+    const fwd = camera.getWorldDirection(new THREE.Vector3());
+    sens *= assist.update(dt, aimHeld(), camera.position, fwd, currentTargets(), losFn, rotateView);
+  }
+
+  let throttle = 0;
+  if (act === 1) {
+    // pilotage
+    let steer = 0, boost = false;
+    if (state === 'play') {
+      throttle = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
+      steer = (k.KeyA || k.ArrowLeft ? 1 : 0) - (k.KeyD || k.ArrowRight ? 1 : 0);
+      if (touch.on) {
+        throttle = clamp(throttle - touch.jy * 1.25, -1, 1);
+        steer = clamp(steer - touch.jx * 1.25, -1, 1);
+      }
+      boost = (!!(k.ShiftLeft || k.ShiftRight) || touch.boost) && throttle > 0;
+    } else if (state === 'intro' || state === 'title') {
+      throttle = 0.55; steer = Math.sin(time * 0.3) * 0.15;
+    } else if (state === 'finale') {
+      throttle = 0.75; steer = clamp(wrapAngle(G.ending.heading - player.heading) * 1.5, -1, 1);
+    }
+    player.update(dt, time, throttle, steer, boost);
+    if (state !== 'title') collide(player);
+
+    // personnages sur la vedette
+    const camDir = camera.getWorldDirection(_d);
+    const aimYaw = Math.atan2(camDir.x, camDir.z);
+    const aiming = aimHeld() || time - G.lastShot < 1.2;
+    const heroYaw = aiming && state === 'play' ? wrapAngle(aimYaw - player.heading) : 0;
+    hero.rotation.y += wrapAngle(heroYaw - hero.rotation.y) * (1 - Math.exp(-12 * dt));
+    animateCharacter(hero, dt, { aim: aiming && state === 'play', pitch: Math.asin(clamp(camDir.y, -1, 1)) + 0.05, heave: player.vy, roll: player.roll, t: time });
+
+    // le frère couvre l'arrière et tire sur l'ennemi le plus proche
+    let near = null, nd = 1e9;
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const d = Math.hypot(e.boat.x - player.x, e.boat.z - player.z);
+      if (d < nd) { nd = d; near = e; }
+    }
+    const bTarget = near ? wrapAngle(Math.atan2(near.boat.x - player.x, near.boat.z - player.z) - player.heading) : Math.PI;
+    brother.rotation.y += wrapAngle(bTarget - brother.rotation.y) * (1 - Math.exp(-4 * dt));
+    animateCharacter(brother, dt, { aim: !!near, pitch: -0.05, heave: player.vy, roll: player.roll, t: time });
+    G.brotherCd = (G.brotherCd ?? 2) - dt;
+    if (near && nd < 120 && G.brotherCd <= 0 && state === 'play') {
+      G.brotherCd = rand(1.1, 2.0);
+      brother.userData.anim.recoil = 1;
+      brother.userData.muzzle.getWorldPosition(_m);
+      const hitIt = Math.random() < 0.32;
+      const to = new THREE.Vector3(near.boat.x + (hitIt ? 0 : rand(-5, 5)), near.boat.y + (hitIt ? 1.2 : 0), near.boat.z + (hitIt ? 0 : rand(-5, 5)));
+      if (!hitIt) { to.y = heightAt(to.x, to.z, time); splash(to, 0.5); }
+      tracers.fire(_m, to, [7, 5, 2.4], 500);
+      audio?.gunshot(0.6, 0);
+      if (hitIt) damageEnemy(near, 12, to);
+    }
+
+    if (state === 'play') updateMission(dt);
+    if (state === 'finale') updateFinale(dt);
+    updateEnemies(dt);
+
+    for (const c of containers) {
+      const h = heightAt(c.x, c.z, time);
+      c.m.position.set(c.x, h - 0.5, c.z);
+      c.m.rotation.set(Math.sin(time * 0.8 + c.ph) * 0.12, c.yaw, Math.cos(time * 0.6 + c.ph) * 0.15, 'YXZ');
+    }
+  } else if (state === 'deck' || (state === 'dead' && act === 2)) {
+    const inp = {
+      forward: (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0) - (touch.on ? touch.jy : 0),
+      right: (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0) + (touch.on ? touch.jx : 0),
+      run: !!(k.ShiftLeft || k.ShiftRight) || touch.boost,
+      aiming: aimHeld() && state === 'deck',
+      shotRecently: time - G.lastShot < 1.0,
+    };
+    if (state === 'dead') { inp.forward = inp.right = 0; inp.aiming = false; }
+    deck.update(dt, inp);
+  }
+
+  // armes
+  if (playing()) {
+    G.fireCd -= dt;
+    G.bloom = Math.max(0, G.bloom - dt * (aimHeld() ? 0.09 : 0.05));
+    if (G.reloading > 0) { G.reloading -= dt; if (G.reloading <= 0) finishReload(); }
+    // un clic bref entre deux images compte quand même
+    const f = fireHeld();
+    const W = WEAPONS[G.cur];
+    if (input.clicked && time - input.clickT > 0.35) input.clicked = false;
+    const want = (f && (W.auto || !G.trigger || touch.fire)) || input.clicked;
+    if (want && G.fireCd <= 0 && G.reloading <= 0) { playerShoot(); input.clicked = false; }
+    G.trigger = f;
+  }
 
   // caméra
-  if (state === 'play' || state === 'dead' || state === 'pause') updateCamera(dt);
-  else if (state === 'intro' || state === 'title') introCamera(dt);
-  else if (state === 'finale' || state === 'end') finaleCamera(dt);
+  if (act === 1) {
+    if (state === 'play' || state === 'dead' || state === 'pause') updateCamera(dt, sens);
+    else if (state === 'intro' || state === 'title') introCamera(dt);
+    else if (state === 'finale') finaleCamera(dt);
+  } else {
+    if (state === 'deck' || state === 'dead') {
+      const inv = settings.invertY ? -1 : 1;
+      deck.updateCamera(dt, aimHeld() && state === 'deck', input.mx, input.my * inv, sens);
+      input.mx = input.my = 0;
+    } else if (state === 'chapter') {
+      if (G.stateT > 4.2) { setOverlay(null); document.body.classList.add('cinema'); state = 'wake'; G.stateT = 0; }
+      updateWake(0.0001, false);
+    } else if (state === 'wake') updateWake(dt);
+    else if (state === 'outro') updateOutro(dt);
+    // trois lampes de pont réelles suivent le joueur
+    const P = deck.player.pos;
+    const lamps = ship.userData.lampPos.slice().sort((a, b) => a.distanceToSquared(P) - b.distanceToSquared(P));
+    deckLamps.forEach((l, i) => { l.position.copy(lamps[i]); l.intensity = state === 'outro' ? 0 : 40; });
+  }
   applyShake(dt);
   if (DEBUG && window.__camOverride) { camera.position.copy(window.__camOverride.pos); camera.lookAt(window.__camOverride.look); camera.fov = 55; camera.updateProjectionMatrix(); }
   particleScale();
@@ -944,32 +1334,37 @@ function frame(now) {
   const flash = lightning.update(dt, camera);
   hemi.intensity = 1.5 + flash * 5;
   const light = 0.32 + flash * 2.2;
-  rain.update(camera, 7 - player.fx * player.speed * 0.7, 4 - player.fz * player.speed * 0.7);
+  const windX = act === 1 ? 7 - player.fx * player.speed * 0.7 : 7, windZ = act === 1 ? 4 - player.fz * player.speed * 0.7 : 4;
+  rain.update(camera, windX, windZ);
   ocean.update(camera);
-  headlight.intensity = 12000;
+  headlight.intensity = act === 1 ? 12000 : 0;
   muzzleLight.intensity *= Math.exp(-40 * dt);
   boomLight.intensity *= Math.exp(-2.2 * dt);
   pushLights();
-  if (Math.random() < dt * Math.abs(player.speed) * 3.2) emitWakeSpray(player, 1);
-  playerWake.update(dt, time, player.x - player.fx * 4.2, player.z - player.fz * 4.2, player.heading, player.speed, player.B, light);
+  if (act === 1) {
+    if (Math.random() < dt * Math.abs(player.speed) * 3.2) emitWakeSpray(player, 1);
+    playerWake.update(dt, time, player.x - player.fx * 4.2, player.z - player.fz * 4.2, player.heading, player.speed, player.B, light);
+  }
   spray.update(dt, light);
   smoke.update(dt, 0.7 + flash * 3);
   fire.update(dt, 1);
   tracers.update(dt);
   updateSubs(dt);
   updateHud(dt);
-  audio?.update(player.speed, Math.max(0, throttle), state === 'finale' ? clamp(G.stateT / 8, 0, 1) : 0);
+  toastT -= dt; if (toastT <= 0) $('toast').classList.remove('on');
+  audio?.update(act === 1 ? player.speed : 0, Math.max(0, throttle), state === 'finale' ? clamp(G.stateT / 8, 0, 1) : state === 'outro' ? 0.25 : 0);
 
   // retour visuel des dégâts et régénération
-  if (state === 'play' && time - G.lastHit > 3.5) G.hp = Math.min(100, G.hp + 28 * dt);
+  if (playing() && time - G.lastHit > 3.5) G.hp = Math.min(100, G.hp + 28 * dt);
   G.damageFx += ((1 - G.hp / 100) - G.damageFx) * (1 - Math.exp(-6 * dt));
   if (state === 'dead') {
     G.damageFx = 1; G.fade = Math.min(0.75, G.stateT * 0.6);
     if (G.stateT > 1.2 && !$('dead').classList.contains('show')) setOverlay('dead');
-  } else if (state !== 'end' && state !== 'finale') G.fade = Math.max(0, G.fade - dt * 0.6);
+  } else if (state === 'play' || state === 'deck' || state === 'intro' || state === 'title') G.fade = Math.max(0, G.fade - dt * 0.6);
   finalPass.uniforms.uDamage.value = G.damageFx;
-  G.wet = Math.max(0.35, (G.wet ?? 0.4) - dt * 0.12);
-  finalPass.uniforms.uWet.value = G.wet * (1 - cam.aim * 0.5);
+  G.wet = Math.max(0.35, G.wet - dt * 0.12);
+  const aimK = act === 1 ? cam.aim : deck.cam.aimK;
+  finalPass.uniforms.uWet.value = G.wet * (1 - aimK * 0.5);
   finalPass.uniforms.uWhite.value = G.white;
   finalPass.uniforms.uFade.value = G.fade;
   finalPass.uniforms.uTime.value = time;
@@ -994,11 +1389,8 @@ function introCamera(dt) {
   camera.fov = 55; camera.updateProjectionMatrix();
 }
 
-/* ------------------------------------------------ déroulé de la mission */
-function updateMission(dt) {
-  G.fireCd -= dt;
-  if (G.reloading > 0) { G.reloading -= dt; if (G.reloading <= 0) G.ammo = G.mag; }
-
+/* ------------------------------------------------ déroulé du chapitre 1 */
+function updateMission() {
   const p = progress();
   sea.amp = 0.9 + clamp(p, 0, 1) * 0.3;
   const w = WAVES[G.wave];
@@ -1006,12 +1398,12 @@ function updateMission(dt) {
     G.wave++;
     G.queue += w.count;
     G.checkpoint = { x: player.x, z: player.z, h: player.heading, wave: G.wave };
-    say(...w.line, 3.2);
+    say(w.line);
     if (G.wave === 1) objective('Sème les mercenaires — ou coule-les');
   }
   if (G.queue > 0 && spawnEnemy()) G.queue--;
-  if (!G.saidMid && p > 0.48) { G.saidMid = true; say('Élias', 'Le cargo dérive en travers de la houle. On l\'aborde par le flanc !', 3.8); }
-  if (!G.saidBox && p > 0.66) { G.saidBox = true; say('Élias', 'Attention, des conteneurs à la mer ! Évite-les !', 3); }
+  if (!G.saidMid && p > 0.48) { G.saidMid = true; say('m1'); }
+  if (!G.saidBox && p > 0.66) { G.saidBox = true; say('m2'); }
 
   const d = obbDist(player.x, player.z, SHIP.x, SHIP.z, SHIP.yaw, SHIP.hx, SHIP.hz);
   if (d < 95) startFinale();
@@ -1023,7 +1415,6 @@ function startFinale() {
   document.exitPointerLock?.();
   document.body.classList.add('cinema');
   objective('');
-  $('objective').classList.remove('on');
   // la vague arrive par bâbord, perpendiculaire à la route vers le cargo
   const toShip = Math.atan2(SHIP.x - player.x, SHIP.z - player.z);
   const lx = Math.cos(toShip), lz = -Math.sin(toShip); // gauche du bateau
@@ -1033,9 +1424,7 @@ function startFinale() {
   sea.rogue.h = 0; sea.rogue.w = 26;
   for (const e of enemies) { e.fireCd = 99; e.slot.light.intensity = 0; }
   subQueue.length = 0; subT = 0;
-  say('Élias', 'Attends… Ralentis. Tu entends ça ?', 2.6);
-  say('Élias', 'Oh non. Regarde à bâbord…', 2.8);
-  say('Élias', 'ACCROCHE-TOI !', 3);
+  say('f1'); say('f2'); say('f3');
   lightning.next = 0.6;
 }
 
@@ -1053,17 +1442,11 @@ function updateFinale(dt) {
     G.ending.t += dt;
     G.white = clamp(G.ending.t * 2.2, 0, 1) * clamp(2.2 - G.ending.t, 0, 1);
     G.fade = clamp((G.ending.t - 1.1) * 1.2, 0, 1);
-    if (G.ending.t > 2.8) {
-      state = 'end';
-      setOverlay('end');
-      $('stat').textContent = `${G.kills} embarcation${G.kills > 1 ? 's' : ''} coulée${G.kills > 1 ? 's' : ''}`;
-      audio?.suspend();
-    }
+    if (G.ending.t > 2.8) startChapter2();
   }
 }
 
 function finaleCamera(dt) {
-  if (state === 'end') return;
   const r = sea.rogue;
   const rx = Math.cos(player.heading), rz = -Math.sin(player.heading);
   // en retrait, à tribord : la vedette au premier plan, la vague derrière elle
@@ -1080,22 +1463,44 @@ function finaleCamera(dt) {
 /* ------------------------------------------------ HUD */
 const elAmmo = $('ammo'), elDist = $('dist'), elHit = $('hitmarker'), elCross = $('crosshair'), elReload = $('reloadBar');
 function updateHud(dt) {
-  if (state !== 'play') return;
-  elAmmo.innerHTML = `<b>${G.ammo}</b><i>/ ∞</i>`;
-  elAmmo.classList.toggle('low', G.ammo <= 3);
-  const d = obbDist(player.x, player.z, SHIP.x, SHIP.z, SHIP.yaw, SHIP.hx, SHIP.hz);
+  if (!playing()) return;
+  const W = WEAPONS[G.cur], inv = G.inv[G.cur];
+  elAmmo.innerHTML = `<b>${inv.ammo}</b><i>/ ${inv.reserve === Infinity ? '∞' : inv.reserve}</i><span>${W.label}</span>`;
+  elAmmo.classList.toggle('low', inv.ammo <= Math.ceil(W.mag * 0.2));
+  let d, ang;
+  if (act === 1) {
+    d = obbDist(player.x, player.z, SHIP.x, SHIP.z, SHIP.yaw, SHIP.hx, SHIP.hz);
+    ang = wrapAngle(Math.atan2(SHIP.x - player.x, SHIP.z - player.z) - (cam.heading + cam.yaw));
+    $('speed').textContent = `${Math.round(Math.abs(player.speed) * 1.94)} nœuds`;
+  } else {
+    d = deck.distanceToDoor();
+    ang = wrapAngle(deck.doorBearing());
+    $('speed').textContent = deck.player.crouch ? 'Accroupi' : '';
+  }
   elDist.textContent = `${Math.max(0, Math.round(d)).toLocaleString('fr-FR')} m`;
-  // repère de direction du cargo
-  const ang = wrapAngle(Math.atan2(SHIP.x - player.x, SHIP.z - player.z) - (cam.heading + cam.yaw));
   $('compass').style.transform = `rotate(${-ang}rad)`;
   G.hitmarker -= dt;
   elHit.classList.toggle('on', G.hitmarker > 0);
+  elHit.classList.toggle('kill', G.hitmarker > 0 && G.hitKill);
+  elHit.classList.toggle('head', G.hitmarker > 0 && !!G.hitHead);
+  // réticule : s'élargit avec la dispersion, rougit sur une cible
+  const fwd = camera.getWorldDirection(_d);
+  const over = pickTarget(camera.position, fwd, currentTargets(), 0.03, losFn);
+  const spread = (aimHeld() ? W.spreadAim : W.spread) + G.bloom;
+  elCross.style.setProperty('--s', (0.55 + spread * 40).toFixed(2));
   elCross.classList.toggle('aim', aimHeld());
-  elReload.style.transform = `scaleX(${G.reloading > 0 ? 1 - G.reloading / 1.3 : 0})`;
-  $('speed').textContent = `${Math.round(Math.abs(player.speed) * 1.94)} nœuds`;
+  elCross.classList.toggle('enemy', !!over);
+  elReload.style.transform = `scaleX(${G.reloading > 0 ? 1 - G.reloading / W.reload : 0})`;
 }
 
-if (DEBUG) window.__game = { THREE, ship, layers: { spray: spray.mesh, smoke: smoke.mesh, fire: fire.mesh, rain: rain.mesh, wake: playerWake.mesh, tracers: tracers.mesh }, bloom, headlight, G, cam, player, enemies, sea, get state() { return state; }, set state(v) { state = v; }, startPlay, spawnEnemy, startFinale, damagePlayer, damageEnemy, SHIP };
+if (DEBUG) {
+  window.__game = {
+    THREE, ship, deck, layers: { spray: spray.mesh, smoke: smoke.mesh, fire: fire.mesh, rain: rain.mesh, wake: playerWake.mesh, tracers: tracers.mesh },
+    bloom, headlight, G, cam, player, enemies, sea, settings, assist,
+    get state() { return state; }, set state(v) { state = v; }, get act() { return act; },
+    startPlay, spawnEnemy, startFinale, startChapter2, startDeck, startOutro, damagePlayer, damageEnemy, pickup, switchWeapon, SHIP,
+  };
+}
 setupTouch();
 frame();
 $('loading').remove();

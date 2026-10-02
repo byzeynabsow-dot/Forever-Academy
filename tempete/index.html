@@ -132,6 +132,56 @@
   body.touch #ammo { bottom: auto; top: 112px; right: 16px; }
   body.touch #reload { bottom: auto; top: 160px; }
 
+
+  /* chapitre 2, paramètres, fin */
+  .a2 { display: none; }
+  body.act2 .a1 { display: none; }
+  body.act2 .a2 { display: inline; }
+  .overlay.art.has-art { background: linear-gradient(180deg, rgba(2,4,6,.25), rgba(2,4,6,.82) 72%), var(--art) center / cover no-repeat; }
+  .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+  button.btn.ghost { border-color: rgba(233,238,242,.28); color: var(--dim); }
+  .badge { margin: 16px 0 0; font-size: 12px; letter-spacing: .08em; color: var(--dim); }
+  .badge span { color: var(--accent); }
+  #crosshair { transform: scale(var(--s, 1)); transition: transform .08s; }
+  #crosshair.enemy::before { background: var(--danger); }
+  #crosshair.enemy::after { border-color: rgba(224,87,74,.85); }
+  #hitmarker.kill::before, #hitmarker.kill::after { background: linear-gradient(var(--danger) 0 30%, transparent 30% 70%, var(--danger) 70%); }
+  #hitmarker.head { transform: scale(1.35); }
+  #ammo span { display: block; text-align: right; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--dim); margin-top: 2px; }
+  #toast { position: absolute; left: 50%; top: 22%; transform: translate(-50%, 6px); font-size: 14px; letter-spacing: .04em;
+    padding: 8px 16px; background: rgba(5,9,12,.55); border-left: 2px solid var(--accent); opacity: 0; transition: opacity .3s, transform .3s; white-space: nowrap; }
+  #toast.on { opacity: 1; transform: translate(-50%, 0); }
+  .panel.settings { text-align: left; max-height: calc(100vh - 32px); overflow-y: auto; padding: 4px 4px 8px; }
+  .panel.settings h2 { text-align: center; font-size: 34px; }
+  .settings fieldset { border: 0; border-top: 1px solid rgba(233,238,242,.14); margin: 0 0 14px; padding: 14px 0 0; display: grid; gap: 10px; }
+  .settings legend { font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: var(--accent); padding: 0 8px 0 0; }
+  .choice { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; padding: 10px 12px; border: 1px solid rgba(233,238,242,.14); cursor: pointer; font-size: 13px; line-height: 1.5; color: var(--dim); }
+  .choice b { display: block; color: var(--ink); font-weight: 600; letter-spacing: .04em; }
+  .choice:has(input:checked) { border-color: var(--accent); background: rgba(232,194,122,.06); }
+  .settings .row { display: flex; align-items: center; gap: 12px; font-size: 14px; flex-wrap: wrap; }
+  .settings .row > span:first-child { flex: 1 1 160px; }
+  .settings .row.check > span { flex: 1; }
+  .settings input[type=range] { flex: 1 1 140px; accent-color: var(--accent); }
+  .settings input[type=checkbox], .settings input[type=radio] { accent-color: var(--accent); }
+  .settings output { min-width: 3.5em; text-align: right; font-variant-numeric: tabular-nums; color: var(--dim); }
+  .seg { display: inline-flex; border: 1px solid rgba(233,238,242,.3); }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg span { display: block; padding: 6px 14px; font-size: 12px; letter-spacing: .15em; text-transform: uppercase; cursor: pointer; color: var(--dim); }
+  .seg input:checked + span { background: var(--ink); color: #05090c; }
+  .seg input:focus-visible + span { outline: 1px solid var(--accent); }
+  .settings .actions { margin-top: 6px; }
+  .panel.chapter h2 { font-size: clamp(36px, 7vw, 76px); letter-spacing: .22em; text-indent: .22em; white-space: nowrap; }
+  #stat { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; margin: 4px auto 28px; max-width: 460px; }
+  #stat div { min-width: 0; }
+  #stat dd.txt { font-size: 15px; padding-top: 5px; }
+  #stat dt { font-size: 10px; letter-spacing: .25em; text-transform: uppercase; color: var(--dim); }
+  #stat dd { margin: 4px 0 0; font-size: 22px; font-weight: 300; font-variant-numeric: tabular-nums; }
+  #tCrouch, #tSwap { display: none; }
+  body.act2 #tCrouch, body.act2 #tSwap { display: block; }
+  #tCrouch { right: 196px; bottom: 30px; width: 54px; height: 54px; font-size: 10px; }
+  #tSwap { right: 28px; bottom: 196px; width: 54px; height: 54px; font-size: 10px; }
+  @media (max-width: 520px) { #stat { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
   @media (max-width: 720px) {
     #objective { left: 16px; top: 20px; } #nav { right: 16px; top: 18px; } #ammo { right: 16px; } #reload { right: 16px; }
     #hint { display: none; }
@@ -149,15 +199,17 @@
   <div id="objective"><small>Objectif</small><span></span></div>
   <div id="nav">
     <div class="row"><span id="dist">— m</span><span id="compass"></span></div>
-    <small>Cargo</small>
-    <div id="speed">0 nœuds</div>
+    <small><span class="a1">Cargo</span><span class="a2">Passerelle</span></small>
+    <div id="speed"></div>
   </div>
-  <div id="crosshair"></div>
+  <div id="crosshair"><i></i></div>
   <div id="hitmarker"></div>
   <div id="ammo"><b>15</b><i>/ ∞</i></div>
   <div id="reload"><div id="reloadBar"></div></div>
+  <div id="toast"></div>
   <div id="hint">
-    <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> piloter · <kbd>Maj</kbd> pleins gaz<br>
+    <span class="a1"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> piloter · <kbd>Maj</kbd> pleins gaz</span>
+    <span class="a2"><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> marcher · <kbd>Maj</kbd> courir · <kbd>C</kbd> s'accroupir · <kbd>1</kbd><kbd>2</kbd> armes</span><br>
     Clic droit viser · Clic gauche tirer · <kbd>R</kbd> recharger
   </div>
 </div>
@@ -166,8 +218,10 @@
   <div id="pad"><div id="knob"></div></div>
   <button id="tFire" type="button">Tir</button>
   <button id="tAim" type="button">Viser</button>
-  <button id="tBoost" type="button">Turbo</button>
+  <button id="tBoost" type="button"><span class="a1">Turbo</span><span class="a2">Courir</span></button>
   <button id="tReload" type="button">R</button>
+  <button id="tCrouch" type="button">Accr.</button>
+  <button id="tSwap" type="button">Arme</button>
   <button id="tPause" type="button">❚❚</button>
 </div>
 
@@ -181,51 +235,98 @@
   <span class="skip">Espace · passer</span>
 </div>
 
-<section class="overlay show" id="title" aria-labelledby="titleH">
+<section class="overlay show art" id="title" aria-labelledby="titleH">
   <div class="panel">
     <div class="kicker">Prologue</div>
     <h1 id="titleH">TEMPÊTE</h1>
-    <p class="lede">Deux frères, une vedette, et des mercenaires lancés à leurs trousses.
-      Traverse la tempête jusqu'au cargo à la dérive.</p>
-    <button class="btn" id="play" type="button" disabled>Jouer</button>
+    <p class="lede">Deux frères, une vedette, des mercenaires lancés à leurs trousses.
+      Traverse la tempête, aborde le cargo à la dérive et trouve le journal du capitaine.</p>
+    <div class="actions">
+      <button class="btn" id="play" type="button" disabled>Jouer</button>
+      <button class="btn ghost" id="openSettings" type="button">Paramètres</button>
+    </div>
     <div id="loading">Chargement de l'océan…</div>
+    <p class="badge"><span id="assistBadge">Visée assistée</span> · modifiable dans les paramètres</p>
     <div class="controls">
-      <span><kbd>Z</kbd><kbd>S</kbd> / <kbd>W</kbd><kbd>S</kbd></span><span>gaz · marche arrière</span>
-      <span><kbd>Q</kbd><kbd>D</kbd> / <kbd>A</kbd><kbd>D</kbd></span><span>barre</span>
-      <span><kbd>Maj</kbd></span><span>pleins gaz</span>
+      <span><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd></span><span>piloter, puis marcher (ou <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>)</span>
+      <span><kbd>Maj</kbd></span><span>pleins gaz · courir</span>
       <span><kbd>Souris</kbd></span><span>regarder · clic droit viser · clic gauche tirer</span>
+      <span><kbd>C</kbd> · <kbd>1</kbd><kbd>2</kbd></span><span>s'accroupir · changer d'arme (à pied)</span>
       <span><kbd>R</kbd> · <kbd>Échap</kbd></span><span>recharger · pause</span>
       <span><kbd>Tactile</kbd></span><span>joystick à gauche, glisser à droite pour regarder</span>
     </div>
     <p class="legal">Hommage non officiel à la première mission d'<i>Uncharted 4 : A Thief's End</i>
       (Naughty Dog / Sony Interactive Entertainment). Création originale : modèles, sons, textes et
-      code sont tous générés pour ce projet, aucun élément du jeu d'origine n'est utilisé.
-      Le casque est conseillé. Ajouter <code>?q=low</code> à l'adresse sur une machine modeste.</p>
+      code sont faits pour ce projet ; voix et illustrations générées avec Higgsfield. Aucun élément
+      du jeu d'origine n'est utilisé. Le casque est conseillé.</p>
   </div>
+</section>
+
+<section class="overlay" id="settings" aria-labelledby="settingsH">
+  <form class="panel settings" id="settingsForm">
+    <h2 id="settingsH">Paramètres</h2>
+    <fieldset>
+      <legend>Assistance à la visée</legend>
+      <label class="choice"><input type="radio" name="assist" value="libre">
+        <span><b>Libre</b> Aucune aide : la balle part exactement sous le réticule.</span></label>
+      <label class="choice"><input type="radio" name="assist" value="assiste">
+        <span><b>Assistée</b> En épaulant, le réticule se cale sur la cible la plus proche ; il ralentit en passant dessus, et un tir à 2° près touche quand même.</span></label>
+      <label class="choice"><input type="radio" name="assist" value="fort">
+        <span><b>Forte</b> Calage plus large, la visée suit la cible, tolérance de 4,5°. Conseillée au tactile.</span></label>
+    </fieldset>
+    <fieldset>
+      <legend>Commandes</legend>
+      <label class="row"><span>Sensibilité de visée</span><input type="range" id="sensitivity" name="sensitivity" min="0.3" max="2" step="0.1"><output id="sensOut">1.0×</output></label>
+      <label class="row check"><input type="checkbox" id="invertY" name="invertY"><span>Inverser l'axe vertical</span></label>
+    </fieldset>
+    <fieldset>
+      <legend>Son et affichage</legend>
+      <label class="row"><span>Volume général</span><input type="range" id="volume" name="volume" min="0" max="1" step="0.05"></label>
+      <label class="row"><span>Volume des voix</span><input type="range" id="voice" name="voice" min="0" max="1" step="0.05"></label>
+      <label class="row check"><input type="checkbox" id="subtitles" name="subtitles"><span>Sous-titres</span></label>
+      <div class="row"><span>Qualité graphique</span>
+        <span class="seg"><label><input type="radio" name="quality" value="haute"><span>Haute</span></label><label><input type="radio" name="quality" value="basse"><span>Basse</span></label></span></div>
+    </fieldset>
+    <div class="actions">
+      <button class="btn" id="closeSettings" type="button">Retour</button>
+      <button class="btn ghost" id="resetSettings" type="button">Valeurs par défaut</button>
+    </div>
+  </form>
 </section>
 
 <section class="overlay" id="pause" aria-labelledby="pauseH">
   <div class="panel">
     <h2 id="pauseH">Pause</h2>
-    <button class="btn" id="resume" type="button">Reprendre</button>
+    <div class="actions">
+      <button class="btn" id="resume" type="button">Reprendre</button>
+      <button class="btn ghost" id="pauseSettings" type="button">Paramètres</button>
+    </div>
   </div>
 </section>
 
 <section class="overlay" id="dead" aria-labelledby="deadH">
   <div class="panel">
     <h2 id="deadH">Tu es mort</h2>
-    <p class="lede">La vedette dérive, moteur coupé. Élias crie ton nom dans le vent.</p>
+    <p class="lede">Élias crie ton nom dans le vent.</p>
     <button class="btn" id="retry" type="button">Reprendre au point de contrôle</button>
   </div>
 </section>
 
-<section class="overlay" id="end" aria-labelledby="endH">
+<section class="overlay art" id="chapter" aria-labelledby="chapterH">
+  <div class="panel chapter">
+    <div class="kicker">Chapitre 2</div>
+    <h2 id="chapterH">Le Cargo</h2>
+    <p class="lede">Quelque part sous le vent, 3 h 05.</p>
+  </div>
+</section>
+
+<section class="overlay art" id="end" aria-labelledby="endH">
   <div class="panel">
     <div class="kicker">Fin du prologue</div>
     <h2 id="endH">À suivre…</h2>
-    <p class="lede">La vague a tout emporté. Quand tu rouvres les yeux, des années plus tôt,
-      un autre souvenir commence.</p>
-    <p class="lede" id="stat"></p>
+    <p class="lede">Le cargo s'enfonce derrière vous. Dans le canot, le journal du capitaine
+      est serré contre la poitrine d'Élias. Quelque part dans ces pages, il y a la suite.</p>
+    <dl id="stat"></dl>
     <button class="btn" id="again" type="button">Rejouer</button>
   </div>
 </section>

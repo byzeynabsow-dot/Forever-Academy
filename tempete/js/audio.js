@@ -10,6 +10,9 @@ export class StormAudio {
     const comp = c.createDynamicsCompressor();
     comp.threshold.value = -14; comp.ratio.value = 4;
     this.master.connect(comp).connect(c.destination);
+    this.voiceGain = c.createGain();
+    this.voiceGain.connect(c.destination);
+    this.voices = new Map();
 
     this.white = this.noiseBuffer(3, 'white');
     this.brown = this.noiseBuffer(4, 'brown');
@@ -133,6 +136,64 @@ export class StormAudio {
     this.engFilter.frequency.setTargetAtTime(380 + s * 1300 + throttle * 300, t, 0.2);
     this.engGain.gain.setTargetAtTime(0.06 + s * 0.12 + throttle * 0.05, t, 0.2);
     this.roar.gain.gain.setTargetAtTime(roar * 2.2, t, 0.3);
+  }
+
+  rifle(gain = 1, pan = 0) {
+    this.burst(this.white, { type: 'bandpass', f: 1600, f2: 250, q: 0.5, gain: 1.0 * gain, attack: 0.001, decay: 0.14, pan });
+    this.burst(this.brown, { f: 600, f2: 80, gain: 0.7 * gain, attack: 0.001, decay: 0.25, pan });
+    this.thump(110, 0.5 * gain, 0.09);
+  }
+  footstep(k = 1) {
+    this.burst(this.white, { type: 'bandpass', f: 900 + Math.random() * 500, q: 1.5, gain: 0.07 * k, attack: 0.002, decay: 0.07 });
+    this.thump(70 + Math.random() * 20, 0.06 * k, 0.06);
+  }
+  metal(gain = 0.6, pan = 0) {
+    const c = this.ctx, t = c.currentTime;
+    const o = c.createOscillator(); o.type = 'triangle';
+    o.frequency.setValueAtTime(1800 + Math.random() * 1600, t);
+    o.frequency.exponentialRampToValueAtTime(900, t + 0.25);
+    const g = c.createGain(); g.gain.setValueAtTime(0.15 * gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    const p = c.createStereoPanner(); p.pan.value = pan;
+    o.connect(g).connect(p).connect(this.master); o.start(t); o.stop(t + 0.32);
+    this.burst(this.white, { type: 'highpass', f: 2500, gain: 0.25 * gain, attack: 0.001, decay: 0.05, pan });
+  }
+  waveCrash(k = 1) {
+    this.burst(this.white, { f: 2200, f2: 300, gain: 0.7 * k, attack: 0.15, decay: 2.2 });
+    this.burst(this.brown, { f: 400, f2: 80, gain: 1.0 * k, attack: 0.05, decay: 1.8 });
+  }
+  door() {
+    this.thump(55, 0.9, 0.5);
+    this.burst(this.white, { type: 'bandpass', f: 700, q: 2, gain: 0.4, attack: 0.01, decay: 0.6 });
+  }
+
+  /* Répliques enregistrées (fichiers audio/vo/<id>.mp3). */
+  async loadVoices(ids, base = 'audio/vo/') {
+    await Promise.all(ids.map(async (id) => {
+      try {
+        const r = await fetch(`${base}${id}.mp3`);
+        if (!r.ok) return;
+        this.voices.set(id, await this.ctx.decodeAudioData(await r.arrayBuffer()));
+      } catch { /* réplique absente : sous-titre seul */ }
+    }));
+  }
+  voiceDuration(id) { return this.voices.get(id)?.duration ?? 0; }
+  playVoice(id, pan = 0) {
+    const b = this.voices.get(id);
+    if (!b) return 0;
+    const src = this.ctx.createBufferSource(); src.buffer = b;
+    const p = this.ctx.createStereoPanner(); p.pan.value = pan;
+    // la radio des mercenaires est filtrée comme un talkie-walkie
+    if (id.startsWith('x')) {
+      const bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 0.9;
+      src.connect(bp).connect(p);
+    } else src.connect(p);
+    p.connect(this.voiceGain);
+    src.start();
+    return b.duration;
+  }
+  setVolumes(master, voice) {
+    this.master.gain.value = master;
+    this.voiceGain.gain.value = voice * Math.min(1, master * 1.4 + 0.1);
   }
 
   suspend() { this.ctx.suspend(); }
